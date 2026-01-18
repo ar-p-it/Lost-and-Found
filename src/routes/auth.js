@@ -1,12 +1,14 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const {userAuth} = require("../middleware/adminAuth")
+const { userAuth } = require("../middleware/adminAuth");
 const authRouter = express.Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const { validateSignUpData } = require("../utils/validation");
 authRouter.post("/signup", async (req, res) => {
   try {
+    console.log("Rigved");
+
     // validate request body
     validateSignUpData(req);
 
@@ -55,27 +57,49 @@ authRouter.post("/signup", async (req, res) => {
 
 authRouter.post("/login", async (req, res) => {
   try {
+    console.log("Rigved1");
+
     const { emailId, password } = req.body;
+
     if (!emailId || !password) {
-      throw new Error("Email and password are required");
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
     }
 
     const user = await User.findOne({ emailId });
     if (!user) {
-      return res.status(404).send("EMAIL NOT FOUND");
+      return res.status(404).json({
+        success: false,
+        message: "EMAIL NOT FOUND",
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).send("INCORRECT PASSWORD");
+      return res.status(401).json({
+        success: false,
+        message: "INCORRECT PASSWORD",
+      });
     }
 
     const token = jwt.sign({ _id: user._id }, "Arpitttt");
-    // console.log(token);
 
-    res.cookie("token", token);
-    res.status(200).send("LOGIN SUCCESS");
-    // res.send("suck");
+    // set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+    });
+
+    // remove password before sending user
+    user.password = undefined;
+
+    return res.status(200).json({
+      success: true,
+      message: "LOGIN SUCCESS",
+      user: user,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -84,9 +108,12 @@ authRouter.post("/login", async (req, res) => {
   }
 });
 
+
 authRouter.get("/profile", userAuth, async (req, resp) => {
   try {
     const userbyid = req.user;
+    console.log("Rigved");
+
     // console.log(userbyid);
     resp.send(userbyid);
   } catch (err) {

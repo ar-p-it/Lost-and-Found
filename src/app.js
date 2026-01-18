@@ -2,8 +2,10 @@ const express = require("express");
 const app = express();
 const connectDB = require("./config/databse");
 const cookieParser = require("cookie-parser");
+const cors = require("cors");
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors());
 // middleware
 
 // root route
