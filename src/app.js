@@ -17,10 +17,15 @@ app.get("/", (req, res) => {
 const authRouter = require("./routes/auth");
 const postRouter = require("./routes/postrouter");
 const hubRouter = require("./routes/hubrouter");
+const chatRouter = require("./routes/chatrouter");
+
+
+
 
 app.use("/", authRouter);
 app.use("/", postRouter);
 app.use("/", hubRouter);
+app.use("/", chatRouter);
 
 // connect DB then start server
 connectDB()

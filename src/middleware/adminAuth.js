@@ -16,7 +16,7 @@ const User = require("../models/user");
 const userAuth = async (req, resp, next) => {
   try {
     const cookies = req.cookies;
-    console.log(cookies);
+    // console.log(cookies);
     const { token } = cookies;
     if (!token) {
       throw new Error("No tokens Error");

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const { userAuth } = require("../middleware/adminAuth");
 const Post = require("../models/post");
 const Hub = require("../models/hub");
+const { interpolateRoute } = require("../utils/routeUtils");
 
 const router = express.Router();
 
@@ -12,6 +13,10 @@ const router = express.Router();
 // Body: { type, title, description, hubId | hubSlug, location?, tags?, images? }
 router.post("/posts", userAuth, async (req, res) => {
   try {
+//     console.log("METHOD:", req.method);
+// console.log("CONTENT-TYPE:", req.headers["content-type"]);
+// console.log("RAW BODY:", req.body);
+
     const { type, title, description, hubId, hubSlug, location, tags, images } =
       req.body;
 
@@ -110,5 +115,71 @@ router.post("/posts", userAuth, async (req, res) => {
       .json({ message: "Internal server error", error: err.message });
   }
 });
+
+// Regular post creation (optional, keep if needed)
+
+
+router.post("/broadcast", userAuth, async (req, res) => {
+  const { title, description, tags, start, end } = req.body;
+
+  if (!title || !description || !start || !end) {
+    return res.status(400).json({ error: 'Missing fields: title, description, start, end' });
+  }
+
+  if (
+    typeof start.lat !== 'number' ||
+    typeof start.lng !== 'number' ||
+    typeof end.lat !== 'number' ||
+    typeof end.lng !== 'number'
+  ) {
+    return res.status(400).json({ error: 'Invalid coordinates' });
+  }
+
+  try {
+    const points = interpolateRoute(start, end);
+    const hubMap = new Map();
+
+    for (const p of points) {
+      const hubs = await Hub.find({
+        isActive: true,
+        location: {
+          $nearSphere: {
+            $geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+            $maxDistance: 2000
+          }
+        }
+      });
+      hubs.forEach(h => hubMap.set(h._id.toString(), h));
+    }
+
+    const hubs = [...hubMap.values()];
+    const createdPosts = [];
+
+    for (const hub of hubs) {
+      const post = new Post({
+        type: 'LOST',
+        title: title.trim(),
+        description,
+        authorId: req.user._id,
+        hubId: hub._id,
+        status: 'OPEN',
+        tags: Array.isArray(tags) ? tags : []
+      });
+      const saved = await post.save();
+      createdPosts.push(saved);
+    }
+
+    res.json({
+      message: 'Broadcast successful',
+      hubsNotified: hubs.length,
+      postsCreated: createdPosts.length
+    });
+  } catch (err) {
+    console.error("Broadcast error:", err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 module.exports = router;

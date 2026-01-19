@@ -104,14 +104,38 @@ curl -X POST http://localhost:7777/posts \
 
 ## Comments & Private Chat
 
-- Comments: Users comment on posts; threaded replies supported.
-- Private Chat: 1:1 chat between participants regarding a post; messages can have TTL expiry.
+- Comments: Users comment on posts; threaded replies supported. (route pending)
+- Private Chat: 1:1 chat between the post author and a viewer who is a hub member.
 
-### API (future routes)
+### API
 
-- POST `/posts/:postId/comments` (to add a comment)
-- POST `/chats` (to start a chat for a post)
-- POST `/messages` (to add a message to a chat)
+- POST `/chats/start` (auth) — start or reuse a chat for a given `postId`.
+- POST `/chats/:chatId/messages` (auth) — send a message in the chat.
+- GET `/chats/:chatId/messages` (auth) — list messages in the chat.
+
+### Example
+
+```bash
+# Start a chat with the post author
+curl -X POST http://localhost:7777/chats/start \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=YOUR_TOKEN" \
+  -d '{
+    "postId":"POST_ID_HERE"
+  }'
+
+# Send a message
+curl -X POST http://localhost:7777/chats/CHAT_ID/messages \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=YOUR_TOKEN" \
+  -d '{
+    "body":"Hi, I think I found your item near platform 3."
+  }'
+
+# List messages
+curl -X GET http://localhost:7777/chats/CHAT_ID/messages \
+  -H "Cookie: token=YOUR_TOKEN"
+```
 
 ## Moderation
 
