@@ -1,8 +1,21 @@
-import { useSelector } from "react-redux";
-
+import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { BASE_URL } from "../utils/constants";
+import { removeUser } from "../utils/userSlice";
 const RedditNavbar = () => {
   const user = useSelector((store) => store.user);
-
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    try {
+      await axios.post(BASE_URL + "/logout", {}, { withCredentials: true });
+      dispatch(removeUser());
+      return navigate("/", { replace: true });
+    } catch (err) {
+      throw new Error(" " + err);
+    }
+  };
   return (
     <nav className="h-14 w-full bg-slate-900 flex items-center px-4 text-slate-100">
       {/* Left */}
@@ -42,11 +55,86 @@ const RedditNavbar = () => {
           🔔
         </button>
 
-        <img
+        {/* <img
           src={user?.photoUrl || "https://i.pravatar.cc/32"}
           alt="profile"
           className="w-8 h-8 rounded-full cursor-pointer border border-slate-700"
-        />
+        /> */}
+        <div className="dropdown dropdown-end">
+          <div
+            tabIndex={0}
+            role="button"
+            className="btn btn-ghost gap-2
+            hover:bg-purple-100
+            transition-colors
+            ring-2 ring-purple-300
+            rounded-full px-2"
+          >
+            {/* Profile Image */}
+            <div className="w-10 h-10 rounded-full overflow-hidden">
+              <img
+                src={user?.photoUrl || user?.photoURL || "/default-avatar.png"}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Welcome text */}
+            {user && (
+              <span className="font-medium text-purple-800">
+                Welcome {user.firstName}
+              </span>
+            )}
+          </div>
+
+          {/* USER DROPDOWN MENU */}
+          <ul
+            tabIndex={-1}
+            className="menu menu-sm dropdown-content
+            bg-gradient-to-br from-purple-50 to-pink-50
+            text-gray-800
+            rounded-xl
+            z-50
+            mt-3
+            w-52
+            p-2
+            shadow-2xl
+            border border-purple-200"
+          >
+            <li>
+              <Link
+                to="/profile"
+                className="rounded-lg hover:bg-purple-100 font-medium"
+              >
+                Profile
+              </Link>
+            </li>{" "}
+            <li>
+              <Link
+                to="/requests"
+                className="rounded-lg hover:bg-purple-100 font-medium"
+              >
+                Requests
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/connections"
+                className="rounded-lg hover:bg-purple-100 font-medium"
+              >
+                Connections
+              </Link>
+            </li>
+            <li>
+              <a
+                className="rounded-lg hover:bg-red-100 font-medium text-red-600"
+                onClick={handleLogout}
+              >
+                Logout
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     </nav>
   );
