@@ -1,90 +1,157 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 
+// User schema for Lost & Found platform
+// Captures identity, profile, roles, hub memberships, and token balance.
 const userSchema = new mongoose.Schema(
   {
-    firstName: {
+    // Unique username for mentions and profile URLs
+    username: {
       type: String,
       required: true,
+      unique: true,
       trim: true,
+      minlength: 3,
+      maxlength: 32,
+      lowercase: true,
+      validate: {
+        validator: (v) => /^[a-z0-9_]+$/.test(v),
+        message: "Username must be lowercase alphanumerics or underscore",
+      },
     },
 
-    lastName: {
-      type: String,
-      trim: true,
-    },
-
-    emailId: {
+    // Email for login and notifications
+    email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
       trim: true,
       validate(value) {
-        if (!validator.isEmail(value)) {
-          throw new Error("Invalid email address");
-        }
+        if (!validator.isEmail(value)) throw new Error("Invalid email address");
       },
     },
 
-    password: {
+    // Secure password hash (e.g., bcrypt)
+    passwordHash: {
       type: String,
       required: true,
     },
 
-    age: {
-      type: Number,
-      min: 18,
+    // Display name for UI
+    displayName: {
+      type: String,
+      trim: true,
+      maxlength: 80,
     },
 
-    gender: {
+    // Optional avatar image URL
+    avatarUrl: {
       type: String,
-      enum: ["male", "female", "others"],
-      required: true,
-    },
-
-    photoUrl: {
-      type: String,
-      default: "https://geographyandyou.com/images/user-profile.png",
+      trim: true,
       validate(value) {
-        if (!validator.isURL(value)) {
-          throw new Error("Invalid photo URL");
-        }
+        if (value && !validator.isURL(value))
+          throw new Error("Invalid avatar URL");
       },
     },
 
-    about: {
+    // Short bio shown on profile
+    bio: {
       type: String,
-      default: "Hey there 👋 I am using DevTinder",
-      maxlength: 300,
+      trim: true,
+      maxlength: 280,
     },
 
-    interests: {
+    // Token balance used for ticketing (earn/spend)
+    tokenBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Global roles, e.g., ADMIN for platform-wide tasks
+    roles: {
       type: [String],
-      default: [],
+      default: ["USER"],
+      enum: ["USER", "ADMIN"],
+      index: true,
     },
 
-    location: {
-      city: String,
-      country: String,
+    // Home location for proximity-based suggestions (optional)
+    homeLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number], // [lng, lat]
+        validate: {
+          validator: (arr) => Array.isArray(arr) && arr.length === 2,
+          message: "homeLocation.coordinates must be [lng, lat]",
+        },
+      },
     },
 
-    lookingFor: {
-      type: String,
-      enum: ["dating", "friendship", "serious"],
-      default: "dating",
-    },
+    // Hub memberships with role per hub and join timestamp
+    memberships: [
+      {
+        hubId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Hub",
+          required: true,
+        },
+        role: {
+          type: String,
+          enum: ["MEMBER", "MODERATOR"],
+          default: "MEMBER",
+        },
+        joinedAt: { type: Date, default: Date.now },
+      },
+    ],
 
-    height: {
-      type: Number, // cm
-    },
-
-    verified: {
+    // Account status controls (e.g., moderation suspension)
+    isSuspended: {
       type: Boolean,
       default: false,
+      index: true,
+    },
+
+    // Last activity timestamp to drive presence features
+    lastActiveAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+
+    // Notification preferences
+    settings: {
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+      },
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        delete ret.passwordHash;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
 );
+
+// Text index for user search by name and bio
+userSchema.index({ displayName: "text", bio: "text" });
+
+// Unique indexes
+userSchema.index({ username: 1 }, { unique: true });
+userSchema.index({ email: 1 }, { unique: true });
+
+// Geo index for homeLocation
+userSchema.index({ homeLocation: "2dsphere" });
 
 module.exports = mongoose.model("User", userSchema);

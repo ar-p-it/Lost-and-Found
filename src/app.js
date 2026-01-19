@@ -1,9 +1,10 @@
 const express = require("express");
 const app = express();
 const connectDB = require("./config/databse");
-const cookieParser = require("cookie-parser");
 const cors = require("cors");
 app.use(express.json());
+const cookieParser = require("cookie-parser");
+
 app.use(cookieParser());
 app.use(cors());
 // middleware
@@ -14,9 +15,12 @@ app.get("/", (req, res) => {
 });
 
 const authRouter = require("./routes/auth");
-
+const postRouter = require("./routes/postrouter");
+const hubRouter = require("./routes/hubrouter");
 
 app.use("/", authRouter);
+app.use("/", postRouter);
+app.use("/", hubRouter);
 
 // connect DB then start server
 connectDB()

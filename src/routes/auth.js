@@ -7,49 +7,46 @@ const bcrypt = require("bcrypt");
 const { validateSignUpData } = require("../utils/validation");
 authRouter.post("/signup", async (req, res) => {
   try {
-    console.log("Rigved");
-
-    // validate request body
+    // validate request body (username, email, password)
     validateSignUpData(req);
 
-    const {
-      firstName,
-      lastName,
-      emailId,
-      password,
-      gender,
-      age,
-      photoUrl,
-      about,
-    } = req.body;
+    const { username, email, password, displayName, avatarUrl, bio } = req.body;
 
-    // hash password
+    // Check uniqueness for username and email
+    const existing = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+    if (existing) {
+      const conflictField =
+        existing.username === username ? "username" : "email";
+      return res.status(409).json({
+        message: `A user with this ${conflictField} already exists`,
+      });
+    }
+
+    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // create user
+    // Create user with the new schema fields
     const user = new User({
-      firstName,
-      lastName,
-      emailId,
-      password: passwordHash,
-      gender,
-      age,
-      photoUrl,
-      about,
+      username,
+      email,
+      passwordHash,
+      displayName,
+      avatarUrl,
+      bio,
+      roles: ["USER"],
     });
 
     const savedUser = await user.save();
 
-    // remove password before sending response
-    savedUser.password = undefined;
-
     res.status(201).json({
       message: "User registered successfully",
-      user: savedUser,
+      user: savedUser.toJSON(),
     });
   } catch (err) {
     res.status(400).json({
-      message: "Error adding user",
+      message: "Error registering user",
       error: err.message,
     });
   }
@@ -57,34 +54,49 @@ authRouter.post("/signup", async (req, res) => {
 
 authRouter.post("/login", async (req, res) => {
   try {
-    console.log("Rigved1");
+    const { email, emailId, username, password } = req.body;
 
-    const { emailId, password } = req.body;
-
-    if (!emailId || !password) {
+    if (!(email || emailId || username) || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Identifier (email or username) and password are required",
       });
     }
 
-    const user = await User.findOne({ emailId });
+    const identifierEmail = email || emailId;
+    const user = await User.findOne({
+      $or: [
+        identifierEmail ? { email: identifierEmail } : null,
+        username ? { username } : null,
+      ].filter(Boolean),
+    });
+
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "EMAIL NOT FOUND",
+        message: "User not found",
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: "INCORRECT PASSWORD",
+        message: "Incorrect password",
       });
     }
 
-    const token = jwt.sign({ _id: user._id }, "Arpitttt");
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is suspended",
+      });
+    }
+
+    const token = jwt.sign(
+      { _id: user._id, username: user.username },
+      "Arpitttt",
+    );
 
     // set cookie
     res.cookie("token", token, {
@@ -92,30 +104,24 @@ authRouter.post("/login", async (req, res) => {
       sameSite: "lax",
     });
 
-    // remove password before sending user
-    user.password = undefined;
-
     return res.status(200).json({
       success: true,
-      message: "LOGIN SUCCESS",
-      user: user,
+      message: "Login successful",
+      user: user.toJSON(),
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
       message: "Something went wrong. Please try again.",
+      error: err.message,
     });
   }
 });
 
-
 authRouter.get("/profile", userAuth, async (req, resp) => {
   try {
-    const userbyid = req.user;
-    console.log("Rigved");
-
-    // console.log(userbyid);
-    resp.send(userbyid);
+    const userDoc = req.user;
+    return resp.status(200).json(userDoc.toJSON());
   } catch (err) {
     resp.status(400).send("ERROR: " + err.message);
   }
@@ -124,8 +130,10 @@ authRouter.get("/profile", userAuth, async (req, resp) => {
 authRouter.post("/logout", async (req, res) => {
   res.cookie("token", null, {
     expires: new Date(Date.now()),
+    httpOnly: true,
+    sameSite: "lax",
   });
-  res.send("Log out Sucess");
+  res.status(200).json({ message: "Logout success" });
 });
 
 module.exports = authRouter;

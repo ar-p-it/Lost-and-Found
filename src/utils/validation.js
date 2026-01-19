@@ -1,26 +1,50 @@
 const validator = require("validator");
 
+// Validate signup for new schema: username, email, password
 const validateSignUpData = (req) => {
-  const { firstName, lastName, emailId, password } = req.body;
-  if (!firstName || !lastName) {
-    throw new Error("Name not valid ");
-  } else if (firstName.length < 4 || lastName.length > 20) {
-    throw new Error("Name not in range of 4 to 20 chars ");
-  } else if (!validator.isEmail(emailId)) {
-    throw new Error("Not an email  ");
-  } else if (!validator.isStrongPassword(password)) {
-    throw new Error("Weak passwrod");
+  const { username, email, password, displayName, avatarUrl } = req.body;
+
+  if (!username || !email || !password) {
+    throw new Error("Username, email, and password are required");
+  }
+
+  if (
+    typeof username !== "string" ||
+    username.length < 3 ||
+    username.length > 32 ||
+    !/^[a-z0-9_]+$/.test(username)
+  ) {
+    throw new Error(
+      "Username must be 3-32 chars of lowercase letters, numbers, or underscore",
+    );
+  }
+
+  if (!validator.isEmail(email)) {
+    throw new Error("Invalid email address");
+  }
+
+  if (!validator.isStrongPassword(password)) {
+    throw new Error("Password is not strong enough");
+  }
+
+  if (displayName && displayName.length > 80) {
+    throw new Error("Display name must be at most 80 characters");
+  }
+
+  if (avatarUrl && !validator.isURL(avatarUrl)) {
+    throw new Error("Invalid avatar URL");
   }
 };
+
+// Validate editable fields for the new schema
 const validateEditData = (req) => {
   const allowedFields = [
-    "firstName",
-    "lastName",
-    "age",
-    "gender",
-    "about",
-    "photoUrl",
-    "skills",
+    "displayName",
+    "bio",
+    "avatarUrl",
+    "settings",
+    "lastActiveAt",
+    "homeLocation",
   ];
 
   const updates = Object.keys(req.body);
@@ -32,35 +56,48 @@ const validateEditData = (req) => {
   const isValidOperation = updates.every((field) =>
     allowedFields.includes(field),
   );
-
   if (!isValidOperation) {
     throw new Error("Invalid fields in update request");
   }
 
-  if (req.body.firstName && req.body.firstName.length < 4) {
-    throw new Error("First name must be at least 4 characters");
+  if (req.body.displayName && req.body.displayName.length > 80) {
+    throw new Error("Display name must be at most 80 characters");
   }
 
-  if (
-    req.body.age !== undefined &&
-    (typeof req.body.age !== "number" || Number.isNaN(req.body.age))
-  ) {
-    throw new Error("Age must be a valid number");
+  if (req.body.bio && req.body.bio.length > 280) {
+    throw new Error("Bio must be at most 280 characters");
   }
 
-  if (
-    req.body.gender &&
-    !["male", "female", "others"].includes(req.body.gender.toLowerCase())
-  ) {
-    throw new Error("Invalid gender value");
+  if (req.body.avatarUrl && !validator.isURL(req.body.avatarUrl)) {
+    throw new Error("Invalid avatar URL");
   }
 
-  if (
-    req.body.skills &&
-    (!Array.isArray(req.body.skills) ||
-      req.body.skills.some((skill) => skill.trim() === ""))
-  ) {
-    throw new Error("Skills must be a valid array");
+  if (req.body.settings) {
+    const { notifications } = req.body.settings;
+    if (notifications) {
+      const { email, push } = notifications;
+      if (
+        (email !== undefined && typeof email !== "boolean") ||
+        (push !== undefined && typeof push !== "boolean")
+      ) {
+        throw new Error("Notification settings must be boolean values");
+      }
+    }
+  }
+
+  if (req.body.homeLocation) {
+    const { type, coordinates } = req.body.homeLocation;
+    if (type && type !== "Point") {
+      throw new Error("homeLocation.type must be 'Point'");
+    }
+    if (
+      !Array.isArray(coordinates) ||
+      coordinates.length !== 2 ||
+      typeof coordinates[0] !== "number" ||
+      typeof coordinates[1] !== "number"
+    ) {
+      throw new Error("homeLocation.coordinates must be [lng, lat]");
+    }
   }
 
   return true;
