@@ -6,7 +6,12 @@ app.use(express.json());
 const cookieParser = require("cookie-parser");
 
 app.use(cookieParser());
-app.use(cors());
+// app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  credentials: true,
+};
+app.use(cors(corsOptions));
 // middleware
 
 // root route
