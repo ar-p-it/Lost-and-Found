@@ -118,6 +118,14 @@ authRouter.post("/login", async (req, res) => {
   }
 });
 
+authRouter.get("/profile/view", userAuth, async (req, resp) => {
+  try {
+    const userbyid = req.user;
+    resp.send(userbyid);
+  } catch (err) {
+    resp.status(400).send("ERROR: " + err.message);
+  }
+});
 authRouter.get("/profile", userAuth, async (req, resp) => {
   try {
     const userDoc = req.user;

@@ -7,15 +7,141 @@ const { interpolateRoute } = require("../utils/routeUtils");
 
 const router = express.Router();
 
+// Small helper to safely build regex from user input
+const escapeRegex = (s = "") => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Usage: Testing GET /posts (list)
+// - No auth required.
+// - Replace BASE_URL with your server + mount path (e.g., http://localhost:3000).
+// Examples:
+// curl -s "BASE_URL/posts?page=1&limit=10&sort=-createdAt"
+// curl -s "BASE_URL/posts?type=LOST&status=OPEN"
+// curl -s "BASE_URL/posts?hubSlug=central-hub&q=wallet"
+// curl -s "BASE_URL/posts?tag=phone&tag=electronics"        // multiple tags
+// curl -s "BASE_URL/posts?hubId=<hubId>"                    // by hubId
+// curl -s "BASE_URL/posts?authorId=<userId>"                // by authorId
+// GET /posts - List posts with pagination, filters, and sorting
+router.get("/posts", async (req, res) => {
+  try {
+    const {
+      page = "1",
+      limit = "5",
+      type,
+      status,
+      hubId,
+      hubSlug,
+      authorId,
+      tag,
+      q,
+      sort = "-createdAt",
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+    const filter = {};
+
+    if (type && ["LOST", "FOUND"].includes(type)) filter.type = type;
+    if (status && ["OPEN", "CLOSED"].includes(status)) filter.status = status;
+
+    if (authorId && mongoose.Types.ObjectId.isValid(authorId)) {
+      filter.authorId = authorId;
+    }
+
+    if (hubId && mongoose.Types.ObjectId.isValid(hubId)) {
+      filter.hubId = hubId;
+    } else if (!hubId && hubSlug) {
+      const hub = await Hub.findOne({
+        slug: String(hubSlug).toLowerCase(),
+        isActive: true,
+      })
+        .select("_id")
+        .lean();
+      if (!hub) {
+        return res.status(404).json({ message: "Hub not found or inactive" });
+      }
+      filter.hubId = hub._id;
+    }
+
+    if (typeof tag !== "undefined") {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      filter.tags = {
+        $in: tags.filter((t) => typeof t === "string" && t.trim()),
+      };
+    }
+
+    if (q && String(q).trim()) {
+      const rx = new RegExp(escapeRegex(String(q).trim()), "i");
+      filter.$or = [{ title: rx }, { description: rx }];
+    }
+
+    // Allow only safe sort fields
+    const allowedSorts = new Set(["createdAt", "-createdAt"]);
+    const sortBy = allowedSorts.has(sort) ? sort : "-createdAt";
+
+    const [items, total] = await Promise.all([
+      Post.find(filter)
+        .sort(sortBy)
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .select("-__v")
+        .lean(),
+      Post.countDocuments(filter),
+    ]);
+
+    return res.json({
+      data: items,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
+    });
+  } catch (err) {
+    console.error("List posts error:", err);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+});
+
+// Usage: Testing GET /posts/:id (single)
+// - No auth required.
+// - Returns 400 for invalid id, 404 if not found.
+// Example:
+// curl -s "BASE_URL/posts/<postId>"
+// GET /posts/:id - Fetch a single post by id
+router.get("/posts/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+
+    const post = await Post.findById(id).select("-__v").lean();
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    return res.json({ data: post });
+  } catch (err) {
+    console.error("Get post error:", err);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+});
+
 // Create a LOST/FOUND post
 // Route: POST /posts
 // Auth: required
 // Body: { type, title, description, hubId | hubSlug, location?, tags?, images? }
 router.post("/posts", userAuth, async (req, res) => {
   try {
-//     console.log("METHOD:", req.method);
-// console.log("CONTENT-TYPE:", req.headers["content-type"]);
-// console.log("RAW BODY:", req.body);
+    //     console.log("METHOD:", req.method);
+    // console.log("CONTENT-TYPE:", req.headers["content-type"]);
+    // console.log("RAW BODY:", req.body);
 
     const { type, title, description, hubId, hubSlug, location, tags, images } =
       req.body;
@@ -118,21 +244,22 @@ router.post("/posts", userAuth, async (req, res) => {
 
 // Regular post creation (optional, keep if needed)
 
-
 router.post("/broadcast", userAuth, async (req, res) => {
   const { title, description, tags, start, end } = req.body;
 
   if (!title || !description || !start || !end) {
-    return res.status(400).json({ error: 'Missing fields: title, description, start, end' });
+    return res
+      .status(400)
+      .json({ error: "Missing fields: title, description, start, end" });
   }
 
   if (
-    typeof start.lat !== 'number' ||
-    typeof start.lng !== 'number' ||
-    typeof end.lat !== 'number' ||
-    typeof end.lng !== 'number'
+    typeof start.lat !== "number" ||
+    typeof start.lng !== "number" ||
+    typeof end.lat !== "number" ||
+    typeof end.lng !== "number"
   ) {
-    return res.status(400).json({ error: 'Invalid coordinates' });
+    return res.status(400).json({ error: "Invalid coordinates" });
   }
 
   try {
@@ -144,12 +271,12 @@ router.post("/broadcast", userAuth, async (req, res) => {
         isActive: true,
         location: {
           $nearSphere: {
-            $geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-            $maxDistance: 2000
-          }
-        }
+            $geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+            $maxDistance: 2000,
+          },
+        },
       });
-      hubs.forEach(h => hubMap.set(h._id.toString(), h));
+      hubs.forEach((h) => hubMap.set(h._id.toString(), h));
     }
 
     const hubs = [...hubMap.values()];
@@ -157,29 +284,27 @@ router.post("/broadcast", userAuth, async (req, res) => {
 
     for (const hub of hubs) {
       const post = new Post({
-        type: 'LOST',
+        type: "LOST",
         title: title.trim(),
         description,
         authorId: req.user._id,
         hubId: hub._id,
-        status: 'OPEN',
-        tags: Array.isArray(tags) ? tags : []
+        status: "OPEN",
+        tags: Array.isArray(tags) ? tags : [],
       });
       const saved = await post.save();
       createdPosts.push(saved);
     }
 
     res.json({
-      message: 'Broadcast successful',
+      message: "Broadcast successful",
       hubsNotified: hubs.length,
-      postsCreated: createdPosts.length
+      postsCreated: createdPosts.length,
     });
   } catch (err) {
     console.error("Broadcast error:", err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
-
-
 
 module.exports = router;

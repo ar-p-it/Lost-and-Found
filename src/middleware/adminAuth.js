@@ -19,7 +19,8 @@ const userAuth = async (req, resp, next) => {
     // console.log(cookies);
     const { token } = cookies;
     if (!token) {
-      throw new Error("No tokens Error");
+      // throw new Error("No tokens Error");
+      return resp.status(401).send("Please login");
     }
     //validate the token
     const decodedMessage = await jwt.verify(token, "Arpitttt");
