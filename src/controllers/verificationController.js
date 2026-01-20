@@ -23,9 +23,9 @@ if (hasCloudinary) {
 // 1. Unified Create Claim (Create + Score + Save)
 exports.createClaim = async (req, res) => {
   try {
-    console.log("--- Creating Unified Claim ---");
-    console.log("Req Body:", req.body);
-    console.log("Req File:", req.file);
+    // console.log("--- Creating Unified Claim ---");
+    // console.log("Req Body:", req.body);
+    // console.log("Req File:", req.file);
 
     const { postId } = req.params;
     const { additionalDescription, serialNumber } = req.body;

@@ -4,7 +4,6 @@ const { userAuth } = require("../middleware/adminAuth");
 const Post = require("../models/post");
 const Hub = require("../models/hub");
 const { interpolateRoute } = require("../utils/routeUtils");
-
 const router = express.Router();
 
 // Small helper to safely build regex from user input
@@ -181,8 +180,7 @@ router.get("/posts", async (req, res) => {
       hasValidLocation: Number.isFinite(latNum) && Number.isFinite(lngNum),
     });
 
-    const hasValidLocation =
-      Number.isFinite(latNum) && Number.isFinite(lngNum);
+    const hasValidLocation = Number.isFinite(latNum) && Number.isFinite(lngNum);
 
     if (!resolvedHubId && hasValidLocation) {
       const userLocation = {
@@ -249,6 +247,7 @@ router.get("/posts", async (req, res) => {
         .sort(sortBy)
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum)
+        .populate({ path: "hubId", select: "name" })
         .select("-__v")
         .lean(),
       Post.countDocuments(filter),
@@ -272,8 +271,6 @@ router.get("/posts", async (req, res) => {
   }
 });
 
-
-
 // Usage: Testing GET /posts/:id (single)
 // - No auth required.
 // - Returns 400 for invalid id, 404 if not found.
@@ -287,7 +284,10 @@ router.get("/posts/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid post id" });
     }
 
-    const post = await Post.findById(id).select("-__v").lean();
+    const post = await Post.findById(id)
+      .populate({ path: "hubId", select: "name" })
+      .select("-__v")
+      .lean();
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -373,15 +373,15 @@ router.post("/posts", userAuth, async (req, res) => {
     // Normalize tags/images
     const normalizedTags = Array.isArray(tags)
       ? tags
-        .filter((t) => typeof t === "string")
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0 && t.length <= 40)
+          .filter((t) => typeof t === "string")
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0 && t.length <= 40)
       : [];
 
     const normalizedImages = Array.isArray(images)
       ? images
-        .filter((img) => img && typeof img === "object")
-        .map((img) => ({ url: img.url, caption: img.caption }))
+          .filter((img) => img && typeof img === "object")
+          .map((img) => ({ url: img.url, caption: img.caption }))
       : [];
 
     const post = new Post({
@@ -487,7 +487,9 @@ router.post("/broadcast", userAuth, async (req, res) => {
   } = req.body;
 
   if (!title || !description) {
-    return res.status(400).json({ error: "title and description are required" });
+    return res
+      .status(400)
+      .json({ error: "title and description are required" });
   }
 
   if (!["LOST", "FOUND"].includes(type)) {
@@ -585,12 +587,12 @@ router.post("/broadcast", userAuth, async (req, res) => {
           location:
             type === "FOUND"
               ? {
-                type: "Point",
-                coordinates: [location.lng, location.lat],
-              }
+                  type: "Point",
+                  coordinates: [location.lng, location.lat],
+                }
               : undefined,
-        })
-      )
+        }),
+      ),
     );
 
     res.json({
@@ -603,7 +605,5 @@ router.post("/broadcast", userAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-
 
 module.exports = router;

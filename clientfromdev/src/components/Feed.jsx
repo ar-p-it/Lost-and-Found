@@ -86,6 +86,11 @@ const Feed = () => {
         });
 
         const posts = res?.data?.data || [];
+        // console.log(posts[0].hubId);
+        // const hubidd=posts[0].hubId;
+        // console.log(hubidd);
+        
+
         const totalPages = res?.data?.pagination?.pages || 1;
 
         if (replace) {
