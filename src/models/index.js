@@ -9,4 +9,5 @@ module.exports = {
   Message: require("./message"),
   TokenTransaction: require("./tokenTransaction"),
   PostModeration: require("./postModeration"),
+  Claim: require("./claim"),
 };

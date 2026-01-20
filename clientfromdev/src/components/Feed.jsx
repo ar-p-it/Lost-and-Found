@@ -30,6 +30,25 @@
 
 // export default Feed;
 
+import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
+import { useEffect, useCallback, useRef, useState } from "react";
+import { BASE_URL } from "../utils/constants";
+import {
+  addFeed,
+  incrementPage,
+  setHasMore,
+  resetFeed,
+} from "../utils/feedSlice";
+import { addClaim, withdrawByPostId } from "../utils/claimsSlice";
+import ClaimModal from "./ClaimModal";
+
+const Feed = () => {
+  const { items, page, hasMore } = useSelector((store) => store.feed);
+  const dispatch = useDispatch();
+  const loadingRef = useRef(false);
+  const abortRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 // import { useDispatch, useSelector } from "react-redux";
 // import axios from "axios";
 // import { useEffect, useCallback, useRef, useState } from "react";
@@ -470,6 +489,44 @@ const Feed = () => {
     fetchFeed(1, { replace: true });
   }, [type, status, hubSlug, tag, debouncedQ, userLocation]); // 👈 userLocation added
 
+  const claimed = useSelector((s) => s.claims.items);
+  const isPostClaimed = (postId) => claimed.some((c) => c.post?._id === postId);
+
+  const [selectedPost, setSelectedPost] = useState(null);
+
+  const handleClaimSuccess = (post, serverData) => {
+    const claimObj = serverData?.claim || serverData?.data?.claim || serverData;
+    const claimId = claimObj?._id;
+    const status = claimObj?.status || "PENDING";
+    const createdAt = claimObj?.createdAt || new Date().toISOString();
+    const claim = {
+      id: claimId || ((crypto && crypto.randomUUID && crypto.randomUUID()) || String(Date.now())),
+      post,
+      status,
+      createdAt,
+    };
+    dispatch(addClaim(claim));
+  };
+
+  const handleWithdraw = async (postId) => {
+    const claimForPost = claimed.find((c) => c.post?._id === postId);
+    const claimId = claimForPost?.id;
+    if (!claimId) {
+      alert("No claim found for this post.");
+      return;
+    }
+    if (!window.confirm("Withdraw your claim for this item?")) return;
+    try {
+      await axios.delete(`${BASE_URL}/api/verification/${claimId}`, {
+        withCredentials: true,
+      });
+      dispatch(withdrawByPostId(postId));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to withdraw claim.");
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto mt-6 space-y-4">
       {/* 🔘 FILTER BUTTONS */}
@@ -575,6 +632,23 @@ const Feed = () => {
 
           <div className="flex justify-between mt-4 text-sm text-gray-500">
             <span>Status: {post.status}</span>
+            <div>
+              {isPostClaimed(post._id) ? (
+                <button
+                  className="bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-lg font-semibold text-xs hover:bg-red-100 transition"
+                  onClick={() => handleWithdraw(post._id)}
+                >
+                  Withdraw
+                </button>
+              ) : (
+                <button
+                  className="bg-gray-900 text-white px-3 py-1.5 rounded-lg font-semibold text-xs hover:bg-black transition"
+                  onClick={() => setSelectedPost(post)}
+                >
+                  Claim
+                </button>
+              )}
+            </div>
             {post.hubId?.name && <span>📍 {post.hubId.name}</span>}
           </div>
         </div>
@@ -603,6 +677,16 @@ const Feed = () => {
 
       {!hasMore && (
         <p className="text-center text-gray-400">You’ve reached the end 🚀</p>
+      )}
+
+      {selectedPost && (
+        <ClaimModal
+          postId={selectedPost._id}
+          postTitle={selectedPost.title}
+          questions={selectedPost.questions || []}
+          onClose={() => setSelectedPost(null)}
+          onSuccess={(serverData) => handleClaimSuccess(selectedPost, serverData)}
+        />
       )}
     </div>
   );
