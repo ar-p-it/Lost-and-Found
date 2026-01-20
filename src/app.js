@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const connectDB = require("./config/databse");
@@ -9,14 +10,14 @@ const path = require("path");
 app.use(cookieParser());
 // app.use(cors());
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: "http://localhost:5173",
   credentials: true,
 };
 app.use(cors(corsOptions));
 // middleware
 
 // This makes http://localhost:7777/uploads/claim-123.jpg accessible
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // root route
 app.get("/", (req, res) => {
@@ -28,11 +29,7 @@ const postRouter = require("./routes/postrouter");
 const hubRouter = require("./routes/hubrouter");
 const chatRouter = require("./routes/chatrouter");
 
-
-
-
 const verificationRouter = require("./routes/verification");
-
 
 app.use("/", authRouter);
 app.use("/", postRouter);

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import { removeUser } from "../utils/userSlice";
-import logo32 from "../favicon_io/favicon-32x32.png";
+import logo32 from "../Icons/android-chrome-512x512.png";
 const RedditNavbar = () => {
   const user = useSelector((store) => store.user);
   // console.log(user);
@@ -106,7 +106,10 @@ const RedditNavbar = () => {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-3">
           {/* Left: Brand */}
-          <Link to="/feed" className="flex items-center gap-3 hover:opacity-90 transition">
+          <Link
+            to="/feed"
+            className="flex items-center gap-3 hover:opacity-90 transition"
+          >
             <img
               src={logo32}
               alt="Lost&Found logo"

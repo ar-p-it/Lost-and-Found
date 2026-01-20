@@ -16,7 +16,9 @@ const Sidebar = () => {
         <div className="bg-blue-600 p-2 rounded-lg">
           <Box className="text-white" size={24} />
         </div>
-        <span className="text-xl font-bold text-gray-800 tracking-tight">Lost & Found</span>
+        <span className="text-xl font-bold text-gray-800 tracking-tight">
+          Lost & Found
+        </span>
       </div>
 
       {/* Navigation Links */}

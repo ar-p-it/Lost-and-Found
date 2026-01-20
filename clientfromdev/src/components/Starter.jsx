@@ -4,7 +4,7 @@ import { BASE_URL } from "../utils/constants";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addUser } from "../utils/userSlice";
-import logo32 from "../favicon_io/favicon-32x32.png";
+import logo32 from "../Icons/android-chrome-512x512.png";
 const Starter = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [emailId, setemailId] = useState("arpit@test.com");
@@ -60,7 +60,7 @@ const Starter = () => {
           <img
             src={logo32}
             alt="Lost&Found logo"
-            className="h-10 w-10 rounded-xl shadow-sm object-contain"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl shadow-sm object-contain"
           />
           <span>Lost &amp; Found</span>
         </div>
