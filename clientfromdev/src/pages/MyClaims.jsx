@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Trash2, ExternalLink, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { BASE_URL } from "../utils/constants";
 
 const MyClaims = () => {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchClaims();
-  }, []);
-
   const fetchClaims = async () => {
     try {
-      const res = await axios.get("http://localhost:7777/api/verification/my-claims", {
+      const res = await axios.get(`${BASE_URL}/api/verification/my-claims`, {
         withCredentials: true,
       });
       setClaims(res.data);
     } catch (err) {
       console.error("Fetch Error:", err);
-      // Don't show error if it's just empty
       if (err.response?.status !== 404) {
         setError("Could not load claims. Are you logged in?");
       }
@@ -28,21 +24,21 @@ const MyClaims = () => {
     }
   };
 
+  useEffect(() => {
+    fetchClaims();
+  }, []);
+
   const handleCancel = async (claimId) => {
     if (!window.confirm("Are you sure you want to withdraw this claim?")) return;
-    
     try {
-      await axios.delete(`http://localhost:7777/api/verification/${claimId}`, {
+      await axios.delete(`${BASE_URL}/api/verification/${claimId}`, {
         withCredentials: true,
       });
-      // Remove from UI immediately
-      setClaims(claims.filter((c) => c._id !== claimId));
+      setClaims((prev) => prev.filter((c) => c._id !== claimId));
     } catch (err) {
       alert("Failed to cancel claim.");
     }
   };
-
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading your activity...</div>;
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -54,7 +50,9 @@ const MyClaims = () => {
         </div>
       )}
 
-      {claims.length === 0 ? (
+      {loading ? (
+        <div className="p-8 text-center text-gray-500">Loading your activity...</div>
+      ) : claims.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center">
           <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Clock className="text-gray-400" size={32} />
@@ -76,7 +74,7 @@ const MyClaims = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-lg font-bold text-gray-800">{claim.postId?.title || "Unknown Item"}</h3>
-                  <StatusBadge status={claim.status} />
+                  <StatusBadge status={claim.status || "PENDING"} />
                 </div>
                 <p className="text-sm text-gray-500">Submitted on {new Date(claim.createdAt).toLocaleDateString()}</p>
                 

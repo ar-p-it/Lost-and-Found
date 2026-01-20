@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { BASE_URL } from "../utils/constants";
 import { X, Upload, CheckCircle, AlertTriangle, HelpCircle } from "lucide-react";
 
 const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) => {
@@ -40,8 +41,8 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
     formData.append("serialNumber", serialNumber);
 
     try {
-      await axios.post(
-        `http://localhost:7777/api/verification/request/${postId}`,
+      const res = await axios.post(
+        `${BASE_URL}/api/verification/request/${postId}`,
         formData,
         {
           withCredentials: true,
@@ -52,9 +53,9 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
       setStatus("success");
       
       setTimeout(() => {
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(res?.data);
         onClose();
-      }, 2000);
+      }, 800);
 
     } catch (err) {
       console.error(err);

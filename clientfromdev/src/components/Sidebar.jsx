@@ -4,7 +4,7 @@ import { Home, List, LogOut, Box } from "lucide-react";
 
 const Sidebar = () => {
   const navItems = [
-    { name: "Browse Items", path: "/", icon: <Home size={20} /> },
+    { name: "Feed", path: "/feed", icon: <Home size={20} /> },
     { name: "My Claims", path: "/my-claims", icon: <List size={20} /> },
   ];
 
@@ -38,16 +38,7 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer / Logout */}
-      <div className="p-4 border-t border-gray-100">
-        <button 
-          onClick={() => alert("Logout Logic Here")}
-          className="flex items-center gap-3 w-full px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all duration-200 font-medium"
-        >
-          <LogOut size={20} />
-          Logout
-        </button>
-      </div>
+      {/* Footer intentionally empty: Navbar handles logout */}
     </aside>
   );
 };
