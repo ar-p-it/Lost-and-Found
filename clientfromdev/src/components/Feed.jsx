@@ -292,7 +292,7 @@ const Feed = () => {
             key={post._id}
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
           >
-            <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+            <div className="flex items-center justify-between gap-2 text-sm text-slate-500">
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-1 font-semibold tracking-wide ${
                   post.type === "LOST"
@@ -305,12 +305,12 @@ const Feed = () => {
               <span>{new Date(post.createdAt).toLocaleString()}</span>
             </div>
 
-            <h2 className="text-xl font-bold text-slate-900 mt-3">
+            <h2 className="text-2xl font-bold text-slate-900 mt-3">
               {post.title}
             </h2>
 
             {post.description && (
-              <p className="text-slate-700 mt-2 text-sm leading-relaxed line-clamp-3">
+              <p className="text-slate-700 mt-2 text-base leading-relaxed line-clamp-3">
                 {post.description}
               </p>
             )}
@@ -320,7 +320,7 @@ const Feed = () => {
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full"
+                    className="text-sm bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full"
                   >
                     #{tag}
                   </span>
@@ -339,14 +339,14 @@ const Feed = () => {
               <div>
                 {isPostClaimed(post._id) ? (
                   <button
-                    className="bg-rose-50 text-rose-700 border border-rose-100 px-3 py-1.5 rounded-lg font-semibold text-xs hover:bg-rose-100 transition"
+                    className="bg-rose-50 text-rose-700 border border-rose-100 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-rose-100 transition"
                     onClick={() => handleWithdraw(post._id)}
                   >
                     Withdraw
                   </button>
                 ) : (
                   <button
-                    className="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold text-xs hover:bg-black transition"
+                    className="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-black transition"
                     onClick={() => setSelectedPost(post)}
                   >
                     Claim

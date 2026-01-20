@@ -46,13 +46,35 @@ exports.createClaim = async (req, res) => {
     // C. Process Image & Calculate Score Immediately
     let imageProofUrl = null;
     if (req.file) {
-      // Multer sets .path differently: Cloudinary gives https URL, disk gives local path; normalize to a URL
-      if (req.file.path && req.file.path.startsWith("http")) {
-        imageProofUrl = req.file.path;
-      } else if (req.file.path) {
-        // Convert local file system path to served URL under /uploads
-        const filename = path.basename(req.file.path);
-        imageProofUrl = `/uploads/${filename}`;
+      try {
+        // Priority 1: If multer-storage-cloudinary provided a URL
+        if (req.file.secure_url) {
+          imageProofUrl = req.file.secure_url;
+        } else if (req.file.path && req.file.path.startsWith("http")) {
+          imageProofUrl = req.file.path;
+        } else if (hasCloudinary && req.file.public_id) {
+          // Build a secure URL from public_id if present
+          imageProofUrl = cloudinary.url(req.file.public_id, {
+            secure: true,
+            format: req.file.format,
+          });
+        } else if (hasCloudinary && req.file.path) {
+          // Fallback: locally stored by multer -> upload to Cloudinary now
+          const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+            folder: "hackathon-claims",
+            resource_type: "image",
+          });
+          imageProofUrl = uploadRes.secure_url;
+          try {
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          } catch {}
+        } else if (req.file.path) {
+          // Final fallback: local static URL
+          const filename = path.basename(req.file.path);
+          imageProofUrl = `/uploads/${filename}`;
+        }
+      } catch (imgErr) {
+        console.error("Image processing error:", imgErr);
       }
     }
 
@@ -95,6 +117,7 @@ exports.createClaim = async (req, res) => {
 
     await newClaim.save();
     console.log(`Claim Created with Score: ${scoringResult.score}`);
+    if (imageProofUrl) console.log(`Proof URL: ${imageProofUrl}`);
     res
       .status(201)
       .json({ message: "Claim submitted successfully", claim: newClaim });
@@ -138,13 +161,8 @@ exports.updateClaimStatus = async (req, res) => {
     claim.status = status;
     claim.timeline.push({ action: status, performedBy: req.user._id });
 
-    if (status === "ACCEPTED") {
-      await Post.findByIdAndUpdate(claim.postId, {
-        status: "RESOLVED",
-        resolvedById: claim.claimantId,
-        resolvedAt: new Date(),
-      });
-    }
+    // NOTE: Temporarily skip altering the Post on decision.
+    // Future: re-enable when resolution flow is defined.
 
     await claim.save();
     res.json(claim);
@@ -199,5 +217,20 @@ exports.deleteClaim = async (req, res) => {
   } catch (error) {
     console.error("ERROR DELETING CLAIM:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// 5. Get Claims created by current user (claimant)
+exports.getMyClaims = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const claims = await Claim.find({ claimantId: userId })
+      .populate("postId", "title description images")
+      .sort({ createdAt: -1 });
+
+    return res.json(claims);
+  } catch (error) {
+    console.error("ERROR FETCHING MY CLAIMS:", error);
+    return res.status(500).json({ message: "Server error fetching your claims" });
   }
 };

@@ -16,6 +16,7 @@ import AppLayout from "./components/AppLayout";
 import { Provider } from "react-redux";
 import appStore from "./utils/appStore";
 import CreatePostPage from "./pages/CreatePostPage";
+import IncomingClaims from "./pages/IncomingClaims";
 
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/create" element={<CreatePostPage />} />
             <Route path="/my-claims" element={<MyClaims />} />
             <Route path="/my-posts" element={<MyPosts />} />
+            <Route path="/requests" element={<IncomingClaims />} />
           </Route>
       </Routes>
     </Router>

@@ -4,6 +4,7 @@ import { BASE_URL } from "../utils/constants";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addUser } from "../utils/userSlice";
+import logo32 from "../favicon_io/favicon-32x32.png";
 const Starter = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [emailId, setemailId] = useState("arpit@test.com");
@@ -56,9 +57,11 @@ const Starter = () => {
 
       <nav className="relative z-30 flex items-center justify-between px-6 sm:px-10 py-5">
         <div className="flex items-center gap-3 font-extrabold text-xl sm:text-2xl tracking-tight">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
-            🧭
-          </span>
+          <img
+            src={logo32}
+            alt="Lost&Found logo"
+            className="h-10 w-10 rounded-xl shadow-sm object-contain"
+          />
           <span>Lost &amp; Found</span>
         </div>
 
