@@ -1,6 +1,7 @@
 // components/AppLayout.jsx
-import { Outlet, useSearchParams } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import RedditNavbar from "./Navbar";
+import Sidebar from "./Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
@@ -50,7 +51,12 @@ const AppLayout = () => {
   return (
     <>
       <RedditNavbar />
-      <Outlet />
+      <div className="flex min-h-[calc(100vh-56px)] bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 md:ml-64 p-6">
+          <Outlet />
+        </main>
+      </div>
     </>
   );
 };
