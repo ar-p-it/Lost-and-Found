@@ -6,12 +6,32 @@ import Starter from "./components/Starter";
 import Feed from "./components/Feed";
 import RedditNavbar from "./components/Navbar";
 
+// function App() {
+//   return (
+//     <Router>
+//       <Routes>
+//         {/* Public landing: Hero + Login */}
+//         <Route path="/" element={<Starter />} />
+import AppLayout from "./components/AppLayout";
+import { Provider } from "react-redux";
+import appStore from "./utils/appStore";
+import CreatePostPage from "./pages/CreatePostPage";
+
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public landing: Hero + Login */}
-        <Route path="/" element={<Starter />} />
+    <Provider store={appStore}>
+      <BrowserRouter>
+        <Routes>
+
+          {/* Public Route */}
+          <Route path="/" element={<Starter />} />
+
+          {/* Protected Layout */}
+          <Route element={<AppLayout />}>
+            <Route path="/feed" element={<Feed />} />
+            <Route path="/create" element={<CreatePostPage />} />
+          </Route>
 
         {/* App layout with sidebar */}
         <Route

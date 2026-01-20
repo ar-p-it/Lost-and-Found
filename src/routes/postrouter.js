@@ -21,8 +21,95 @@ const escapeRegex = (s = "") => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // curl -s "BASE_URL/posts?hubId=<hubId>"                    // by hubId
 // curl -s "BASE_URL/posts?authorId=<userId>"                // by authorId
 // GET /posts - List posts with pagination, filters, and sorting
+// router.get("/posts", async (req, res) => {
+//   try {
+//     const {
+//       page = "1",
+//       limit = "5",
+//       type,
+//       status,
+//       hubId,
+//       hubSlug,
+//       authorId,
+//       tag,
+//       q,
+//       sort = "-createdAt",
+//     } = req.query;
+
+//     const pageNum = Math.max(1, parseInt(page, 10) || 1);
+//     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+//     const filter = {};
+
+//     if (type && ["LOST", "FOUND"].includes(type)) filter.type = type;
+//     if (status && ["OPEN", "CLOSED"].includes(status)) filter.status = status;
+
+//     if (authorId && mongoose.Types.ObjectId.isValid(authorId)) {
+//       filter.authorId = authorId;
+//     }
+
+//     if (hubId && mongoose.Types.ObjectId.isValid(hubId)) {
+//       filter.hubId = hubId;
+//     } else if (!hubId && hubSlug) {
+//       const hub = await Hub.findOne({
+//         slug: String(hubSlug).toLowerCase(),
+//         isActive: true,
+//       })
+//         .select("_id")
+//         .lean();
+//       if (!hub) {
+//         return res.status(404).json({ message: "Hub not found or inactive" });
+//       }
+//       filter.hubId = hub._id;
+//     }
+
+//     if (typeof tag !== "undefined") {
+//       const tags = Array.isArray(tag) ? tag : [tag];
+//       filter.tags = {
+//         $in: tags.filter((t) => typeof t === "string" && t.trim()),
+//       };
+//     }
+
+//     if (q && String(q).trim()) {
+//       const rx = new RegExp(escapeRegex(String(q).trim()), "i");
+//       filter.$or = [{ title: rx }, { description: rx }];
+//     }
+
+//     // Allow only safe sort fields
+//     const allowedSorts = new Set(["createdAt", "-createdAt"]);
+//     const sortBy = allowedSorts.has(sort) ? sort : "-createdAt";
+
+//     const [items, total] = await Promise.all([
+//       Post.find(filter)
+//         .sort(sortBy)
+//         .skip((pageNum - 1) * limitNum)
+//         .limit(limitNum)
+//         .select("-__v")
+//         .lean(),
+//       Post.countDocuments(filter),
+//     ]);
+
+//     return res.json({
+//       data: items,
+//       pagination: {
+//         page: pageNum,
+//         limit: limitNum,
+//         total,
+//         pages: Math.ceil(total / limitNum) || 1,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("List posts error:", err);
+//     return res
+//       .status(500)
+//       .json({ message: "Internal server error", error: err.message });
+//   }
+// });
+
+// GET /posts - List posts with optional location-based filtering
 router.get("/posts", async (req, res) => {
   try {
+    console.log("RAW QUERY:", req.query);
     const {
       page = "1",
       limit = "5",
@@ -34,35 +121,111 @@ router.get("/posts", async (req, res) => {
       tag,
       q,
       sort = "-createdAt",
+      lat,
+      lng,
     } = req.query;
 
+    /* ---------------- Pagination ---------------- */
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
 
+    /* ---------------- Base filter ---------------- */
     const filter = {};
 
     if (type && ["LOST", "FOUND"].includes(type)) filter.type = type;
-    if (status && ["OPEN", "CLOSED"].includes(status)) filter.status = status;
+    if (status && ["OPEN", "MATCHED", "RESOLVED"].includes(status)) {
+      filter.status = status;
+    }
 
     if (authorId && mongoose.Types.ObjectId.isValid(authorId)) {
       filter.authorId = authorId;
     }
 
+    /* ---------------- Normalize hubSlug ---------------- */
+    const cleanHubSlug =
+      typeof hubSlug === "string" && hubSlug.trim().length > 0
+        ? hubSlug.trim().toLowerCase()
+        : null;
+
+    /* ---------------- Resolve explicit hub ---------------- */
+    let resolvedHubId = null;
+
     if (hubId && mongoose.Types.ObjectId.isValid(hubId)) {
-      filter.hubId = hubId;
-    } else if (!hubId && hubSlug) {
+      resolvedHubId = hubId;
+    } else if (!hubId && cleanHubSlug) {
       const hub = await Hub.findOne({
-        slug: String(hubSlug).toLowerCase(),
+        slug: cleanHubSlug,
         isActive: true,
       })
         .select("_id")
         .lean();
+
       if (!hub) {
         return res.status(404).json({ message: "Hub not found or inactive" });
       }
-      filter.hubId = hub._id;
+
+      resolvedHubId = hub._id;
     }
 
+    /* ---------------- Location-based hub filtering ---------------- */
+    let hubIdsToInclude = [];
+
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+
+    console.log("PARSED LOCATION:", {
+      lat,
+      lng,
+      latNum,
+      lngNum,
+      hasValidLocation: Number.isFinite(latNum) && Number.isFinite(lngNum),
+    });
+
+    const hasValidLocation =
+      Number.isFinite(latNum) && Number.isFinite(lngNum);
+
+    if (!resolvedHubId && hasValidLocation) {
+      const userLocation = {
+        type: "Point",
+        coordinates: [lngNum, latNum], // [lng, lat]
+      };
+
+      const nearbyHubs = await Hub.find({
+        isActive: true,
+        location: {
+          $nearSphere: {
+            $geometry: userLocation,
+            $maxDistance: 5000, // 5 km
+          },
+        },
+      }).select("_id");
+
+      console.log("NEARBY HUB COUNT:", nearbyHubs.length);
+
+      hubIdsToInclude = nearbyHubs.map((h) => h._id);
+
+      if (hubIdsToInclude.length === 0) {
+        return res.json({
+          data: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: 0,
+            pages: 1,
+          },
+        });
+      }
+    }
+
+    /* ---------------- Apply hub filter precedence ---------------- */
+    if (resolvedHubId) {
+      filter.hubId = resolvedHubId;
+    } else if (hubIdsToInclude.length > 0) {
+      filter.hubId = { $in: hubIdsToInclude };
+    }
+    // else → global feed
+
+    /* ---------------- Tag filter ---------------- */
     if (typeof tag !== "undefined") {
       const tags = Array.isArray(tag) ? tag : [tag];
       filter.tags = {
@@ -70,15 +233,17 @@ router.get("/posts", async (req, res) => {
       };
     }
 
+    /* ---------------- Search filter ---------------- */
     if (q && String(q).trim()) {
       const rx = new RegExp(escapeRegex(String(q).trim()), "i");
       filter.$or = [{ title: rx }, { description: rx }];
     }
 
-    // Allow only safe sort fields
+    /* ---------------- Sorting ---------------- */
     const allowedSorts = new Set(["createdAt", "-createdAt"]);
     const sortBy = allowedSorts.has(sort) ? sort : "-createdAt";
 
+    /* ---------------- Fetch data ---------------- */
     const [items, total] = await Promise.all([
       Post.find(filter)
         .sort(sortBy)
@@ -100,11 +265,14 @@ router.get("/posts", async (req, res) => {
     });
   } catch (err) {
     console.error("List posts error:", err);
-    return res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    return res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 });
+
+
 
 // Usage: Testing GET /posts/:id (single)
 // - No auth required.
@@ -205,15 +373,15 @@ router.post("/posts", userAuth, async (req, res) => {
     // Normalize tags/images
     const normalizedTags = Array.isArray(tags)
       ? tags
-          .filter((t) => typeof t === "string")
-          .map((t) => t.trim())
-          .filter((t) => t.length > 0 && t.length <= 40)
+        .filter((t) => typeof t === "string")
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0 && t.length <= 40)
       : [];
 
     const normalizedImages = Array.isArray(images)
       ? images
-          .filter((img) => img && typeof img === "object")
-          .map((img) => ({ url: img.url, caption: img.caption }))
+        .filter((img) => img && typeof img === "object")
+        .map((img) => ({ url: img.url, caption: img.caption }))
       : [];
 
     const post = new Post({
