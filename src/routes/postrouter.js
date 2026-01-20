@@ -412,57 +412,186 @@ router.post("/posts", userAuth, async (req, res) => {
 
 // Regular post creation (optional, keep if needed)
 
-router.post("/broadcast", userAuth, async (req, res) => {
-  const { title, description, tags, start, end } = req.body;
+// router.post("/broadcast", userAuth, async (req, res) => {
+//   const { title, description, tags, start, end } = req.body;
 
-  if (!title || !description || !start || !end) {
-    return res
-      .status(400)
-      .json({ error: "Missing fields: title, description, start, end" });
+//   if (!title || !description || !start || !end) {
+//     return res
+//       .status(400)
+//       .json({ error: "Missing fields: title, description, start, end" });
+//   }
+
+//   if (
+//     typeof start.lat !== "number" ||
+//     typeof start.lng !== "number" ||
+//     typeof end.lat !== "number" ||
+//     typeof end.lng !== "number"
+//   ) {
+//     return res.status(400).json({ error: "Invalid coordinates" });
+//   }
+
+//   try {
+//     const points = interpolateRoute(start, end);
+//     const hubMap = new Map();
+
+//     for (const p of points) {
+//       const hubs = await Hub.find({
+//         isActive: true,
+//         location: {
+//           $nearSphere: {
+//             $geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+//             $maxDistance: 2000,
+//           },
+//         },
+//       });
+//       hubs.forEach((h) => hubMap.set(h._id.toString(), h));
+//     }
+
+//     const hubs = [...hubMap.values()];
+//     const createdPosts = [];
+
+//     for (const hub of hubs) {
+//       const post = new Post({
+//         type: "LOST",
+//         title: title.trim(),
+//         description,
+//         authorId: req.user._id,
+//         hubId: hub._id,
+//         status: "OPEN",
+//         tags: Array.isArray(tags) ? tags : [],
+//       });
+//       const saved = await post.save();
+//       createdPosts.push(saved);
+//     }
+
+//     res.json({
+//       message: "Broadcast successful",
+//       hubsNotified: hubs.length,
+//       postsCreated: createdPosts.length,
+//     });
+//   } catch (err) {
+//     console.error("Broadcast error:", err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+router.post("/broadcast", userAuth, async (req, res) => {
+  const {
+    type = "LOST",
+    title,
+    description,
+    tags = [],
+    start,
+    end,
+    location,
+  } = req.body;
+
+  if (!title || !description) {
+    return res.status(400).json({ error: "title and description are required" });
   }
 
-  if (
-    typeof start.lat !== "number" ||
-    typeof start.lng !== "number" ||
-    typeof end.lat !== "number" ||
-    typeof end.lng !== "number"
-  ) {
-    return res.status(400).json({ error: "Invalid coordinates" });
+  if (!["LOST", "FOUND"].includes(type)) {
+    return res.status(400).json({ error: "Invalid post type" });
   }
 
   try {
-    const points = interpolateRoute(start, end);
-    const hubMap = new Map();
+    let hubs = [];
 
-    for (const p of points) {
-      const hubs = await Hub.find({
+    /* ---------------- LOST FLOW ---------------- */
+    if (type === "LOST") {
+      if (!start || !end) {
+        return res.status(400).json({
+          error: "start and end are required for LOST items",
+        });
+      }
+
+      if (
+        typeof start.lat !== "number" ||
+        typeof start.lng !== "number" ||
+        typeof end.lat !== "number" ||
+        typeof end.lng !== "number"
+      ) {
+        return res.status(400).json({ error: "Invalid coordinates" });
+      }
+
+      const points = interpolateRoute(start, end);
+      const hubMap = new Map();
+
+      for (const p of points) {
+        const nearby = await Hub.find({
+          isActive: true,
+          location: {
+            $nearSphere: {
+              $geometry: {
+                type: "Point",
+                coordinates: [p.lng, p.lat],
+              },
+              $maxDistance: 2000,
+            },
+          },
+        });
+
+        nearby.forEach((h) => hubMap.set(h._id.toString(), h));
+      }
+
+      hubs = [...hubMap.values()];
+    }
+
+    /* ---------------- FOUND FLOW ---------------- */
+    if (type === "FOUND") {
+      if (
+        !location ||
+        typeof location.lat !== "number" ||
+        typeof location.lng !== "number"
+      ) {
+        return res.status(400).json({
+          error: "location (lat,lng) is required for FOUND items",
+        });
+      }
+
+      hubs = await Hub.find({
         isActive: true,
         location: {
           $nearSphere: {
-            $geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+            $geometry: {
+              type: "Point",
+              coordinates: [location.lng, location.lat],
+            },
             $maxDistance: 2000,
           },
         },
       });
-      hubs.forEach((h) => hubMap.set(h._id.toString(), h));
     }
 
-    const hubs = [...hubMap.values()];
-    const createdPosts = [];
-
-    for (const hub of hubs) {
-      const post = new Post({
-        type: "LOST",
-        title: title.trim(),
-        description,
-        authorId: req.user._id,
-        hubId: hub._id,
-        status: "OPEN",
-        tags: Array.isArray(tags) ? tags : [],
+    /* ---------------- CREATE POSTS ---------------- */
+    if (hubs.length === 0) {
+      return res.json({
+        message: "Broadcast successful",
+        hubsNotified: 0,
+        postsCreated: 0,
       });
-      const saved = await post.save();
-      createdPosts.push(saved);
     }
+
+    const createdPosts = await Promise.all(
+      hubs.map((hub) =>
+        Post.create({
+          type,
+          title: title.trim(),
+          description,
+          authorId: req.user._id,
+          hubId: hub._id,
+          status: "OPEN",
+          tags,
+          location:
+            type === "FOUND"
+              ? {
+                type: "Point",
+                coordinates: [location.lng, location.lat],
+              }
+              : undefined,
+        })
+      )
+    );
 
     res.json({
       message: "Broadcast successful",
@@ -474,5 +603,7 @@ router.post("/broadcast", userAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
 
 module.exports = router;
