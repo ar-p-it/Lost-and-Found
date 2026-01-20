@@ -26,6 +26,8 @@ import Feed from "./components/Feed";
 import AppLayout from "./components/AppLayout";
 import { Provider } from "react-redux";
 import appStore from "./utils/appStore";
+import CreatePostPage from "./pages/CreatePostPage";
+
 
 function App() {
   return (
@@ -39,6 +41,7 @@ function App() {
           {/* Protected Layout */}
           <Route element={<AppLayout />}>
             <Route path="/feed" element={<Feed />} />
+            <Route path="/create" element={<CreatePostPage />} />
           </Route>
 
         </Routes>

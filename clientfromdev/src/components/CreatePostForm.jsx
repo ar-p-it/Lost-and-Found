@@ -1,0 +1,359 @@
+// src/components/CreatePostForm.jsx
+import { useState } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix marker icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// Geocoding function using Nominatim (OpenStreetMap)
+async function geocodeAddress(address) {
+    if (!address.trim()) return null;
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+        );
+        const data = await response.json();
+        if (data.length > 0) {
+            return {
+                lat: parseFloat(data[0].lat),
+                lng: parseFloat(data[0].lon),
+                display_name: data[0].display_name,
+            };
+        }
+    } catch (err) {
+        console.error('Geocoding failed:', err);
+    }
+    return null;
+}
+
+export default function CreatePostForm() {
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        tags: [],
+        newTag: '',
+        images: [],
+    });
+
+    const [startLocation, setStartLocation] = useState(null); // { lat, lng, display_name }
+    const [endLocation, setEndLocation] = useState(null);
+    const [startInput, setStartInput] = useState('');
+    const [endInput, setEndInput] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [message, setMessage] = useState('');
+
+    // Handle basic input changes
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddTag = () => {
+        if (formData.newTag.trim() && !formData.tags.includes(formData.newTag.trim())) {
+            setFormData((prev) => ({
+                ...prev,
+                tags: [...prev.tags, formData.newTag.trim()],
+                newTag: '',
+            }));
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove) => {
+        setFormData((prev) => ({
+            ...prev,
+            tags: prev.tags.filter((tag) => tag !== tagToRemove),
+        }));
+    };
+
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        setFormData((prev) => ({
+            ...prev,
+            images: [...prev.images, ...files],
+        }));
+    };
+
+    // Geocode when user types and presses Enter or blurs
+    const handleGeocodeStart = async () => {
+        if (!startInput.trim()) return;
+        const result = await geocodeAddress(startInput);
+        if (result) {
+            setStartLocation(result);
+        } else {
+            setMessage('❌ Could not find start location. Try a more specific landmark.');
+        }
+    };
+
+    const handleGeocodeEnd = async () => {
+        if (!endInput.trim()) return;
+        const result = await geocodeAddress(endInput);
+        if (result) {
+            setEndLocation(result);
+        } else {
+            setMessage('❌ Could not find end location. Try a more specific landmark.');
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!startLocation || !endLocation) {
+            setMessage('Please enter valid start and end locations.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setMessage('');
+
+        try {
+            const payload = {
+                title: formData.title,
+                description: formData.description,
+                tags: formData.tags,
+                start: { lat: startLocation.lat, lng: startLocation.lng },
+                end: { lat: endLocation.lat, lng: endLocation.lng },
+            };
+
+            console.log('Submitting payload:', payload);
+
+            const response = await fetch('http://localhost:7777/broadcast', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setMessage(`✅ Success! Notified ${data.hubsNotified} hubs.`);
+                console.log('Broadcast response:', data);
+                // Optional: reset form
+            } else {
+                setMessage(`❌ Error: ${data.error || 'Broadcast failed'}`);
+            }
+        } catch (err) {
+            console.error(err);
+            setMessage('❌ Network error. Is backend running?');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto p-6 bg-gray-800 rounded-xl shadow-lg">
+            <h2 className="text-2xl font-bold mb-6 text-center">Report a Lost Item</h2>
+
+            {message && (
+                <div className={`p-3 mb-4 rounded ${message.includes('Success') ? 'bg-green-900' : 'bg-red-900'}`}>
+                    {message}
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Title */}
+                <div>
+                    <label className="block mb-2 font-medium">Title *</label>
+                    <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                        placeholder="e.g., Red Backpack with Black Straps"
+                        required
+                    />
+                </div>
+
+                {/* Description */}
+                <div>
+                    <label className="block mb-2 font-medium">Description *</label>
+                    <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows="4"
+                        className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                        placeholder="Describe where and when you lost it, distinguishing features..."
+                        required
+                    />
+                </div>
+
+                {/* Tags */}
+                <div>
+                    <label className="block mb-2 font-medium">Tags</label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={formData.newTag}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, newTag: e.target.value }))}
+                            className="flex-1 p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                            placeholder="Add a tag (e.g., backpack, red)"
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddTag}
+                            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition"
+                        >
+                            Add
+                        </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {formData.tags.map((tag) => (
+                            <span
+                                key={tag}
+                                className="px-3 py-1 bg-purple-700 rounded-full flex items-center gap-2"
+                            >
+                                {tag}
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveTag(tag)}
+                                    className="text-xs hover:text-red-300"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Images (Optional) */}
+                <div>
+                    <label className="block mb-2 font-medium">Images (Optional)</label>
+                    <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="w-full p-2 bg-gray-700 rounded text-white"
+                    />
+                    {formData.images.length > 0 && (
+                        <div className="mt-1 text-sm text-gray-400">
+                            {formData.images.length} image(s) selected
+                        </div>
+                    )}
+                </div>
+
+                {/* Start Location Input */}
+                <div>
+                    <label className="block mb-2 font-medium text-green-400">Start Location *</label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={startInput}
+                            onChange={(e) => setStartInput(e.target.value)}
+                            onBlur={handleGeocodeStart}
+                            onKeyDown={(e) => e.key === 'Enter' && handleGeocodeStart()}
+                            className="flex-1 p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                            placeholder="e.g., City Hall, New York"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={handleGeocodeStart}
+                            className="px-4 py-2 bg-green-700 rounded hover:bg-green-600"
+                        >
+                            Search
+                        </button>
+                    </div>
+                    {startLocation && (
+                        <p className="mt-1 text-sm text-green-300">
+                            📍 {startLocation.display_name}
+                        </p>
+                    )}
+                </div>
+
+                {/* End Location Input */}
+                <div>
+                    <label className="block mb-2 font-medium text-red-400">End Location *</label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={endInput}
+                            onChange={(e) => setEndInput(e.target.value)}
+                            onBlur={handleGeocodeEnd}
+                            onKeyDown={(e) => e.key === 'Enter' && handleGeocodeEnd()}
+                            className="flex-1 p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                            placeholder="e.g., Brooklyn Bridge Entrance"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={handleGeocodeEnd}
+                            className="px-4 py-2 bg-red-700 rounded hover:bg-red-600"
+                        >
+                            Search
+                        </button>
+                    </div>
+                    {endLocation && (
+                        <p className="mt-1 text-sm text-red-300">
+                            📍 {endLocation.display_name}
+                        </p>
+                    )}
+                </div>
+
+                {/* Map Preview */}
+                {/* Map Preview */}
+                <div>
+                    <h3 className="font-medium mb-2">Route Preview</h3>
+                    <div className="h-64 rounded overflow-hidden border border-gray-600">
+                        <MapContainer
+                            key={`${startLocation?.lat || ''}-${endLocation?.lat || ''}`}
+                            center={
+                                startLocation
+                                    ? [startLocation.lat, startLocation.lng]
+                                    : endLocation
+                                        ? [endLocation.lat, endLocation.lng]
+                                        : [40.7128, -74.006]
+                            }
+                            zoom={13}
+                            style={{ height: '100%', width: '100%' }}
+                            scrollWheelZoom={true}
+                        >
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+
+                            {startLocation && (
+                                <Marker position={[startLocation.lat, startLocation.lng]} />
+                            )}
+
+                            {endLocation && (
+                                <Marker position={[endLocation.lat, endLocation.lng]} />
+                            )}
+
+                            {startLocation && endLocation && (
+                                <Polyline
+                                    positions={[
+                                        [startLocation.lat, startLocation.lng],
+                                        [endLocation.lat, endLocation.lng]
+                                    ]}
+                                    color="#3b82f6"
+                                    weight={4}
+                                    opacity={0.8}
+                                />
+                            )}
+                        </MapContainer>
+                    </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full py-3 rounded font-semibold ${isSubmitting ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'
+                        }`}
+                >
+                    {isSubmitting ? 'Broadcasting...' : 'Broadcast Lost Item'}
+                </button>
+            </form>
+        </div>
+    );
+}

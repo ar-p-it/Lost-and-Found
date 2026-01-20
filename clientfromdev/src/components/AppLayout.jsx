@@ -9,11 +9,25 @@ import { useEffect } from "react";
 
 import { addUser } from "../utils/userSlice";
 
+// import CreatePostPage from "../pages/CreatePostPage";
+
+// <Routes>
+//   {/* Public */}
+//   <Route path="/" element={<Starter />} />
+
+//   {/* App layout */}
+//   <Route element={<AppLayout />}>
+//     <Route path="/feed" element={<Feed />} />
+//     {/* <Route path="/create" element={<CreatePostPage />} /> */}
+//   </Route>
+// </Routes>
+
+
 const AppLayout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const user = useSelector((store)=>store.user);
-  
+  const user = useSelector((store) => store.user);
+
   const fetchUser = async () => {
     try {
       const user = await axios.get(BASE_URL + "/profile/view", {
@@ -23,7 +37,7 @@ const AppLayout = () => {
     } catch (err) {
       if (err.status === 401) {
         // navigate("/");
-         navigate("/", { replace: true });
+        navigate("/", { replace: true });
       }
       console.log(err);
       // throw new Error(" Error " + err);

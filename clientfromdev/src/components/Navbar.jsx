@@ -47,9 +47,12 @@ const RedditNavbar = () => {
 
       {/* Right */}
       <div className="flex items-center gap-3 min-w-[200px] justify-end">
-        <button className="hover:bg-slate-800 px-3 py-1 rounded-md transition">
+        {/* <button className="hover:bg-slate-800 px-3 py-1 rounded-md transition">
           Create
-        </button>
+        </button> */}
+        <Link to="/create" className="hover:bg-slate-800 px-3 py-1 rounded-md">
+          Create
+        </Link>
 
         <button className="hover:bg-slate-800 p-2 rounded-full transition">
           🔔

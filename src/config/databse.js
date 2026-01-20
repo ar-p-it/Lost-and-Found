@@ -1,5 +1,5 @@
-const URI = "mongodb+srv://arpit:ty8NJcOQ6FGtn5BP@rubix.2surb5z.mongodb.net/Rigved";
-
+// const URI = "mongodb+srv://arpit:ty8NJcOQ6FGtn5BP@rubix.2surb5z.mongodb.net/Rigved";
+const URI = "mongodb+srv://rigved_db_user:Rigved%4016@cluster0.x7wo8ke.mongodb.net/rubix"
 const mongoose = require("mongoose");
 const connectDB = async () => {
   await mongoose.connect(URI);
