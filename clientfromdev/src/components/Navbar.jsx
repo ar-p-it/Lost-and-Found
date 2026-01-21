@@ -188,9 +188,12 @@ const RedditNavbar = () => {
                   </li>
 
                   <li>
-                    <button className="rounded-lg hover:bg-indigo-100 flex items-center gap-3">
+                    <Link
+                      to="/create-hub"
+                      className="rounded-lg hover:bg-indigo-100 flex items-center gap-3"
+                    >
                       🏗️ <span className="font-medium">Create Hub</span>
-                    </button>
+                    </Link>
                   </li>
 
                   <li>

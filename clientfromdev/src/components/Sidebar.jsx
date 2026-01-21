@@ -7,6 +7,7 @@ const Sidebar = () => {
     { name: "Feed", path: "/feed", icon: <Home size={20} /> },
     { name: "My Posts", path: "/my-posts", icon: <List size={20} /> },
     { name: "My Claims", path: "/my-claims", icon: <List size={20} /> },
+    { name: "Hubs", path: "/hubs", icon: <List size={20} /> },
   ];
 
   return (

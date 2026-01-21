@@ -21,6 +21,8 @@ import IncomingClaims from "./pages/IncomingClaims";
 import HubPosts from "./components/HubPosts";
 import EditProfile from "./components/EditProfile";
 import Profile from "./components/Profile";
+import Hub from "./components/Hub";
+import Hubs from "./pages/Hubs";
 
 function App() {
   return (
@@ -40,6 +42,8 @@ function App() {
             <Route path="/requests" element={<IncomingClaims />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/editprofile" element={<EditProfile />} />
+            <Route path="/hubs" element={<Hubs />} />
+            <Route path="/create-hub" element={<Hub />} />
           </Route>
         </Routes>
       </Router>
