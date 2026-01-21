@@ -17,7 +17,7 @@ app.use(cors(corsOptions));
 // middleware
 
 // This makes http://localhost:7777/uploads/claim-123.jpg accessible
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // root route
 app.get("/", (req, res) => {
@@ -25,7 +25,8 @@ app.get("/", (req, res) => {
 });
 
 // Masked env info for debugging (printed once at startup)
-const mask = (k) => (k ? `${String(k).slice(0, 6)}… (len ${String(k).length})` : "(missing)");
+const mask = (k) =>
+  k ? `${String(k).slice(0, 6)}… (len ${String(k).length})` : "(missing)";
 console.log("[Env] GOOGLE_API_KEY:", mask(process.env.GOOGLE_API_KEY));
 
 const authRouter = require("./routes/auth");
