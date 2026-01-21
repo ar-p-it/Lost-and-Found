@@ -32,7 +32,7 @@ const Sidebar = () => {
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                 isActive
                   ? "bg-blue-50 text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-black dark:hover:text-black"
               }`
             }
           >

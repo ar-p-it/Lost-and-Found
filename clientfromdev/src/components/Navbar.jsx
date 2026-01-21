@@ -143,7 +143,7 @@ const RedditNavbar = () => {
             <div className="hidden sm:flex items-center gap-1">
               <Link
                 to="/feed"
-                className="inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                className="inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-black dark:hover:text-black transition"
               >
                 Feed
               </Link>
@@ -253,7 +253,7 @@ const RedditNavbar = () => {
             <div className="relative hidden sm:inline-flex">
               <button
                 onClick={handleToggleHubs}
-                className="inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                className="inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-black dark:hover:text-black transition"
               >
                 Hubs
               </button>
@@ -367,7 +367,7 @@ const RedditNavbar = () => {
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <span className="hidden sm:inline-block text-sm font-bold text-slate-800 max-w-30 truncate">
+                <span className="hidden sm:inline-block text-sm font-bold text-black dark:text-black max-w-30 truncate">
                   {user ? user.username : "Login"}
                 </span>
               </div>
@@ -379,7 +379,7 @@ const RedditNavbar = () => {
                 <li>
                   <Link
                     to="/profile"
-                    className="rounded-lg hover:bg-indigo-50 font-semibold text-slate-700"
+                    className="rounded-lg hover:bg-indigo-50 dark:hover:text-black font-semibold text-slate-700"
                   >
                     Profile
                   </Link>
@@ -387,7 +387,7 @@ const RedditNavbar = () => {
                 <li>
                   <Link
                     to="/requests"
-                    className="rounded-lg hover:bg-indigo-50 font-semibold text-slate-700"
+                    className="rounded-lg hover:bg-indigo-50 dark:hover:text-black font-semibold text-slate-700"
                   >
                     Requests
                   </Link>
@@ -395,7 +395,7 @@ const RedditNavbar = () => {
                 <li>
                   <Link
                     to="/editprofile"
-                    className="rounded-lg hover:bg-indigo-50 font-semibold text-slate-700"
+                    className="rounded-lg hover:bg-indigo-50 dark:hover:text-black font-semibold text-slate-700"
                   >
                     Edit Profile
                   </Link>

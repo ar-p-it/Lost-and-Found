@@ -111,7 +111,7 @@ const Starter = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 relative overflow-hidden">
+    <div className="h-screen bg-slate-50 text-black relative overflow-hidden flex flex-col">
       <div className="absolute inset-0">
         <video
           autoPlay
@@ -139,7 +139,7 @@ const Starter = () => {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => setShowLogin(true)}
-            className="rounded-full px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition"
+            className="rounded-full px-4 py-2 text-sm font-semibold text-black hover:bg-slate-100 transition"
           >
             Login
           </button>
@@ -160,7 +160,7 @@ const Starter = () => {
           ></div>
 
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border border-slate-200 bg-white/95 backdrop-blur p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold mb-4 text-center text-slate-900">
+            <h2 className="text-2xl font-bold mb-4 text-center text-black">
               Welcome back
             </h2>
 
@@ -221,7 +221,7 @@ const Starter = () => {
           ></div>
 
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border border-slate-200 bg-white/95 backdrop-blur p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold mb-4 text-center text-slate-900">
+            <h2 className="text-2xl font-bold mb-4 text-center text-black">
               Create your account
             </h2>
 
@@ -313,14 +313,14 @@ const Starter = () => {
         </>
       )}
 
-      <section className="relative z-10 min-h-screen flex items-center justify-center px-6">
+      <section className="relative z-10 flex-1 flex items-center justify-center px-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 opacity-90 bg-[linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px),linear-gradient(180deg,rgba(0,0,0,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.05),transparent_60%)]" />
         </div>
 
         <div className="relative w-full max-w-4xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs sm:text-sm text-slate-600 shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs sm:text-sm text-black/80 shadow-sm">
             <span>🔎</span>
             <span className="animate-pulse">
               Find lost items faster, together
@@ -328,11 +328,11 @@ const Starter = () => {
             <span>🧩</span>
           </div>
 
-          <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-black">
             Lost &amp; Found
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg md:text-xl text-slate-600">
+          <p className="mt-4 text-base sm:text-lg md:text-xl text-black/80">
             A community-powered platform to report, track, and recover lost
             items across trusted local hubs.
           </p>
@@ -358,7 +358,7 @@ const Starter = () => {
             </button>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm text-slate-500">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm text-black/60">
             <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 shadow-sm">
               📍 Local hubs
             </span>
@@ -375,7 +375,7 @@ const Starter = () => {
       {showLoginToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <div className="flex flex-col sm:flex-row items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-5 py-3 shadow-xl backdrop-blur">
-            <span className="text-sm text-slate-700">
+            <span className="text-sm text-black">
               Please log in to continue.
             </span>
             <button
