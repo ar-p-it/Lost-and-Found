@@ -1,20 +1,47 @@
 import axios from "axios";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BASE_URL } from "../utils/constants";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addUser } from "../utils/userSlice";
-import logo32 from "../favicon_io/favicon-32x32.png";
+import logo32 from "../Icons/android-chrome-512x512.png";
 const Starter = () => {
   const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const [showLoginToast, setShowLoginToast] = useState(false);
   const [emailId, setemailId] = useState("arpit@test.com");
   const [password, setpassword] = useState("Test@1234");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [loginErrorMsg, setLoginErrorMsg] = useState("");
+  const [signupErrorMsg, setSignupErrorMsg] = useState("");
+  const [signupUsername, setSignupUsername] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupDisplayName, setSignupDisplayName] = useState("");
+  const [signupPhotoUrl, setSignupPhotoUrl] = useState("");
+  const [signupBio, setSignupBio] = useState("");
+  const toastTimerRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const triggerLoginToast = () => {
+    setShowLoginToast(true);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setShowLoginToast(false);
+      toastTimerRef.current = null;
+    }, 4500);
+  };
+
+  const handleToastLoginClick = () => {
+    setShowLoginToast(false);
+    setShowLogin(true);
+    setShowSignup(false);
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
-    setErrorMsg("");
+    setLoginErrorMsg("");
     try {
       const response = await axios.post(
         BASE_URL + "/login",
@@ -29,13 +56,57 @@ const Starter = () => {
       dispatch(addUser(response.data.user));
       // navigate("/");
       navigate("/feed");
-      console.log(response.data);
+      // console.log(response.data);
     } catch (error) {
       const message =
         error.response?.data?.message ||
         "Something went wrong. Please try again.";
 
-      setErrorMsg(message);
+      setLoginErrorMsg(message);
+    }
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setSignupErrorMsg("");
+
+    if (!signupUsername || !signupEmail || !signupPassword) {
+      setSignupErrorMsg("Username, email, and password are required.");
+      return;
+    }
+
+    if (!/^[a-z0-9_]{3,32}$/.test(signupUsername)) {
+      setSignupErrorMsg(
+        "Username must be 3-32 chars of lowercase letters, numbers, or underscore.",
+      );
+      return;
+    }
+
+    try {
+      await axios.post(
+        BASE_URL + "/signup",
+        {
+          username: signupUsername,
+          email: signupEmail,
+          password: signupPassword,
+          displayName: signupDisplayName || undefined,
+          photoUrl: signupPhotoUrl || undefined,
+          bio: signupBio || undefined,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+      setemailId(signupEmail || emailId);
+      setpassword(signupPassword || password);
+      setShowSignup(false);
+      setShowLogin(true);
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        "Something went wrong. Please try again.";
+
+      setSignupErrorMsg(message);
     }
   };
 
@@ -60,7 +131,7 @@ const Starter = () => {
           <img
             src={logo32}
             alt="Lost&Found logo"
-            className="h-10 w-10 rounded-xl shadow-sm object-contain"
+            className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl shadow-sm object-contain"
           />
           <span>Lost &amp; Found</span>
         </div>
@@ -72,7 +143,10 @@ const Starter = () => {
           >
             Login
           </button>
-          <button className="rounded-full px-4 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-black shadow-sm transition">
+          <button
+            onClick={() => setShowSignup(true)}
+            className="rounded-full px-4 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-black shadow-sm transition"
+          >
             Sign Up
           </button>
         </div>
@@ -113,8 +187,124 @@ const Starter = () => {
               Login
             </button>
 
+            {loginErrorMsg && (
+              <p className="mt-3 text-sm text-rose-600 text-center">
+                {loginErrorMsg}
+              </p>
+            )}
+
+            <button
+              onClick={() => {
+                setShowLogin(false);
+                setShowSignup(true);
+              }}
+              className="mt-4 text-sm text-indigo-600 hover:text-indigo-700 block mx-auto"
+            >
+              New here? Create an account
+            </button>
+
             <button
               onClick={() => setShowLogin(false)}
+              className="mt-4 text-sm text-slate-500 hover:text-slate-700 block mx-auto"
+            >
+              Close
+            </button>
+          </div>
+        </>
+      )}
+
+      {showSignup && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowSignup(false)}
+          ></div>
+
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border border-slate-200 bg-white/95 backdrop-blur p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold mb-4 text-center text-slate-900">
+              Create your account
+            </h2>
+
+            <input
+              type="text"
+              placeholder="Username (lowercase)"
+              value={signupUsername}
+              onChange={(e) =>
+                setSignupUsername(e.target.value.toLowerCase().trim())
+              }
+              className="w-full mb-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <input
+              type="text"
+              placeholder="Display name (optional)"
+              value={signupDisplayName}
+              onChange={(e) => setSignupDisplayName(e.target.value)}
+              className="w-full mb-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <input
+              type="email"
+              placeholder="Email"
+              value={signupEmail}
+              onChange={(e) =>
+                setSignupEmail(e.target.value.toLowerCase().trim())
+              }
+              className="w-full mb-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={signupPassword}
+              onChange={(e) => setSignupPassword(e.target.value)}
+              className="w-full mb-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="-mt-1 mb-3 text-xs text-slate-500">
+              Use 8+ chars with upper, lower, number, and symbol.
+            </p>
+
+            <input
+              type="url"
+              placeholder="Photo URL (optional)"
+              value={signupPhotoUrl}
+              onChange={(e) => setSignupPhotoUrl(e.target.value)}
+              className="w-full mb-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <textarea
+              placeholder="Short bio (optional)"
+              value={signupBio}
+              onChange={(e) => setSignupBio(e.target.value)}
+              rows={3}
+              className="w-full mb-4 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <button
+              className="w-full rounded-xl bg-emerald-600 py-2.5 font-semibold text-white hover:bg-emerald-700 transition shadow"
+              onClick={handleSignup}
+            >
+              Sign Up
+            </button>
+
+            {signupErrorMsg && (
+              <p className="mt-3 text-sm text-rose-600 text-center">
+                {signupErrorMsg}
+              </p>
+            )}
+
+            <button
+              onClick={() => {
+                setShowSignup(false);
+                setShowLogin(true);
+              }}
+              className="mt-4 text-sm text-indigo-600 hover:text-indigo-700 block mx-auto"
+            >
+              Already have an account? Login
+            </button>
+
+            <button
+              onClick={() => setShowSignup(false)}
               className="mt-4 text-sm text-slate-500 hover:text-slate-700 block mx-auto"
             >
               Close
@@ -132,7 +322,9 @@ const Starter = () => {
         <div className="relative w-full max-w-4xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs sm:text-sm text-slate-600 shadow-sm">
             <span>🔎</span>
-            <span>Find lost items faster, together</span>
+            <span className="animate-pulse">
+              Find lost items faster, together
+            </span>
             <span>🧩</span>
           </div>
 
@@ -146,13 +338,22 @@ const Starter = () => {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button className="w-full sm:w-auto rounded-xl bg-indigo-600 px-6 py-3 text-sm sm:text-base font-semibold text-white shadow-md hover:bg-indigo-700 transition">
+            <button
+              onClick={triggerLoginToast}
+              className="w-full sm:w-auto rounded-xl bg-indigo-600 px-6 py-3 text-sm sm:text-base font-semibold text-white shadow-md hover:bg-indigo-700 transition"
+            >
               Report Lost
             </button>
-            <button className="w-full sm:w-auto rounded-xl bg-emerald-600 px-6 py-3 text-sm sm:text-base font-semibold text-white shadow-md hover:bg-emerald-700 transition">
+            <button
+              onClick={triggerLoginToast}
+              className="w-full sm:w-auto rounded-xl bg-emerald-600 px-6 py-3 text-sm sm:text-base font-semibold text-white shadow-md hover:bg-emerald-700 transition"
+            >
               Report Found
             </button>
-            <button className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm sm:text-base font-semibold text-slate-700 hover:bg-slate-50 transition">
+            <button
+              onClick={() => setShowLogin(true)}
+              className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm sm:text-base font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
               Login / Sign Up
             </button>
           </div>
@@ -170,6 +371,22 @@ const Starter = () => {
           </div>
         </div>
       </section>
+
+      {showLoginToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex flex-col sm:flex-row items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-5 py-3 shadow-xl backdrop-blur">
+            <span className="text-sm text-slate-700">
+              Please log in to continue.
+            </span>
+            <button
+              onClick={handleToastLoginClick}
+              className="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-black transition"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

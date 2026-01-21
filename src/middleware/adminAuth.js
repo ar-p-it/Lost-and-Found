@@ -24,7 +24,7 @@ const userAuth = async (req, resp, next) => {
     }
     //validate the token
     const decodedMessage = await jwt.verify(token, "Arpitttt");
-    console.log(decodedMessage);
+    // console.log(decodedMessage);
     const { _id } = decodedMessage;
     // console.log(_id);
     const userbyid = await User.findById(_id);

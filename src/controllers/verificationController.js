@@ -24,9 +24,9 @@ if (hasCloudinary) {
 // 1. Unified Create Claim (Create + Score + Save)
 exports.createClaim = async (req, res) => {
   try {
-    console.log("--- Creating Unified Claim ---");
-    console.log("Req Body:", req.body);
-    console.log("Req File:", req.file);
+    // console.log("--- Creating Unified Claim ---");
+    // console.log("Req Body:", req.body);
+    // console.log("Req File:", req.file);
 
     const { postId } = req.params;
     const { additionalDescription, serialNumber } = req.body;
@@ -69,10 +69,6 @@ exports.createClaim = async (req, res) => {
           try {
             if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
           } catch {}
-        } else if (req.file.path) {
-          // Final fallback: local static URL
-          const filename = path.basename(req.file.path);
-          imageProofUrl = `/uploads/${filename}`;
         }
       } catch (imgErr) {
         console.error("Image processing error:", imgErr);
@@ -278,6 +274,8 @@ exports.getMyClaims = async (req, res) => {
     return res.json(claims);
   } catch (error) {
     console.error("ERROR FETCHING MY CLAIMS:", error);
-    return res.status(500).json({ message: "Server error fetching your claims" });
+    return res
+      .status(500)
+      .json({ message: "Server error fetching your claims" });
   }
 };

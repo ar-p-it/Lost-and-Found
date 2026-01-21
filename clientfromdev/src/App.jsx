@@ -19,6 +19,8 @@ import CreatePostPage from "./pages/CreatePostPage";
 import IncomingClaims from "./pages/IncomingClaims";
 
 import HubPosts from "./components/HubPosts";
+import EditProfile from "./components/EditProfile";
+import Profile from "./components/Profile";
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
             <Route path="/my-claims" element={<MyClaims />} />
             <Route path="/my-posts" element={<MyPosts />} />
             <Route path="/requests" element={<IncomingClaims />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/editprofile" element={<EditProfile />} />
           </Route>
         </Routes>
       </Router>
