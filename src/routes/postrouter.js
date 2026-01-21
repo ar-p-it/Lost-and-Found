@@ -172,13 +172,13 @@ router.get("/posts", async (req, res) => {
     const latNum = Number(lat);
     const lngNum = Number(lng);
 
-    console.log("PARSED LOCATION:", {
-      lat,
-      lng,
-      latNum,
-      lngNum,
-      hasValidLocation: Number.isFinite(latNum) && Number.isFinite(lngNum),
-    });
+    // console.log("PARSED LOCATION:", {
+    //   lat,
+    //   lng,
+    //   latNum,
+    //   lngNum,
+    //   hasValidLocation: Number.isFinite(latNum) && Number.isFinite(lngNum),
+    // });
 
     const hasValidLocation = Number.isFinite(latNum) && Number.isFinite(lngNum);
 
@@ -198,7 +198,7 @@ router.get("/posts", async (req, res) => {
         },
       }).select("_id");
 
-      console.log("NEARBY HUB COUNT:", nearbyHubs.length);
+      // console.log("NEARBY HUB COUNT:", nearbyHubs.length);
 
       hubIdsToInclude = nearbyHubs.map((h) => h._id);
 

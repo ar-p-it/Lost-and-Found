@@ -18,6 +18,7 @@ const RedditNavbar = () => {
   const [hubsTitle, setHubsTitle] = useState("Your hubs");
   const [hubsMode, setHubsMode] = useState("joined");
   const [joinedHubIds, setJoinedHubIds] = useState(new Set());
+  const isAdmin = user?.roles?.includes("ADMIN");
   const handleLogout = async () => {
     try {
       await axios.post(BASE_URL + "/logout", {}, { withCredentials: true });
@@ -154,6 +155,70 @@ const RedditNavbar = () => {
             >
               Create
             </Link>
+
+            {isAdmin && (
+              <div className="relative dropdown dropdown-end">
+                {/* Soft glow (reduced) */}
+                <div className="absolute -inset-0.5 rounded-lg bg-indigo-500/20 blur-sm"></div>
+
+                {/* Button */}
+                <button
+                  tabIndex={0}
+                  className="relative z-10 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-md hover:bg-indigo-700 transition"
+                >
+                  ADMIN
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+
+                {/* Dropdown */}
+                <ul
+                  tabIndex={-1}
+                  className="menu dropdown-content mt-3 w-64 rounded-xl border border-indigo-200 bg-indigo-50 text-slate-800 shadow-xl p-2"
+                >
+                  <li className="menu-title px-3 py-1 text-xs font-bold text-indigo-700">
+                    Admin Actions
+                  </li>
+
+                  <li>
+                    <button className="rounded-lg hover:bg-indigo-100 flex items-center gap-3">
+                      🏗️ <span className="font-medium">Create Hub</span>
+                    </button>
+                  </li>
+
+                  <li>
+                    <button className="rounded-lg hover:bg-indigo-100 flex items-center gap-3">
+                      📍 <span className="font-medium">Manage Hubs</span>
+                    </button>
+                  </li>
+
+                  <li>
+                    <button className="rounded-lg hover:bg-indigo-100 flex items-center gap-3">
+                      👥 <span className="font-medium">Approve Requests</span>
+                    </button>
+                  </li>
+
+                  <li>
+                    <button className="rounded-lg hover:bg-indigo-100 flex items-center gap-3">
+                      🚨 <span className="font-medium">TakeDown Posts</span>
+                    </button>
+                  </li>
+
+                  <li className="mt-1 border-t border-indigo-200">
+                    <button className="rounded-lg hover:bg-red-100 text-red-700 flex items-center gap-3 font-semibold">
+                      ⚠️ Suspend User
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
 
             <div className="relative hidden sm:inline-flex">
               <button
@@ -299,10 +364,10 @@ const RedditNavbar = () => {
                 </li>
                 <li>
                   <Link
-                    to="/connections"
+                    to="/editprofile"
                     className="rounded-lg hover:bg-indigo-50 font-semibold text-slate-700"
                   >
-                    Connections
+                    Edit Profile
                   </Link>
                 </li>
                 <li>

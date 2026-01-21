@@ -40,6 +40,52 @@ router.get("/hubs/search", userAuth, async (req, res) => {
   }
 });
 
+// List hubs within 10km radius
+// Route: GET /gethubs?lat=..&lng=..
+router.get("/gethubs", async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+      return res.status(400).json({ message: "lat and lng required" });
+    }
+
+    const hubs = await Hub.find({
+      location: {
+        $geoWithin: {
+          $box: [
+            [MUMBAI_BOUNDS.minLng, MUMBAI_BOUNDS.minLat],
+            [MUMBAI_BOUNDS.maxLng, MUMBAI_BOUNDS.maxLat],
+          ],
+        },
+      },
+    }).find({
+      location: {
+        $nearSphere: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lngNum, latNum],
+          },
+          $maxDistance: 10000,
+        },
+      },
+    });
+
+    res.json({ data: hubs });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+const MUMBAI_BOUNDS = {
+  minLat: 18.89,
+  maxLat: 19.35,
+  minLng: 72.75,
+  maxLng: 73.20,
+};
+
 // List hubs joined by the current user
 // Route: GET /hubs
 router.get("/hubs", userAuth, async (req, res) => {

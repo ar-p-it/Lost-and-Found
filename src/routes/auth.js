@@ -4,7 +4,7 @@ const { userAuth } = require("../middleware/adminAuth");
 const authRouter = express.Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
-const { validateSignUpData } = require("../utils/validation");
+const { validateSignUpData, validateEditData } = require("../utils/validation");
 authRouter.post("/signup", async (req, res) => {
   try {
     // validate request body (username, email, password)
@@ -135,6 +135,27 @@ authRouter.get("/profile", userAuth, async (req, resp) => {
     resp.status(400).send("ERROR: " + err.message);
   }
 });
+
+// Update profile
+// Route: PATCH /profile
+authRouter.patch("/profile", userAuth, async (req, res) => {
+  try {
+    validateEditData(req);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      req.body,
+      { new: true, runValidators: true },
+    );
+
+    return res.status(200).json({ user: updatedUser.toJSON() });
+  } catch (err) {
+    return res.status(400).json({ message: "Update failed", error: err.message });
+  }
+});
+
+
+
 
 authRouter.post("/logout", async (req, res) => {
   res.cookie("token", null, {
