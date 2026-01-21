@@ -388,7 +388,7 @@ const Feed = () => {
           <ClaimModal
             postId={selectedPost._id}
             postTitle={selectedPost.title}
-            questions={selectedPost.questions || []}
+            questions={selectedPost.securityQuestions || []}
             onClose={() => setSelectedPost(null)}
             onSuccess={(serverData) =>
               handleClaimSuccess(selectedPost, serverData)

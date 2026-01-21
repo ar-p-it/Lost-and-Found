@@ -32,7 +32,8 @@ const verificationDataSchema = new mongoose.Schema({
   imageProofUrl: { type: String, trim: true, default: null },
   serialNumber: { type: String, trim: true, default: null },
   additionalDescription: { type: String, trim: true, maxlength: 2000 },
-  systemTrustScore: { type: Number, default: 0, min: 0, max: 100 }
+  systemTrustScore: { type: Number, default: 0, min: 0, max: 100 },
+  systemTrustRationale: { type: String, trim: true, maxlength: 2000 }
 });
 
 // --- 3. Main Claim Schema ---

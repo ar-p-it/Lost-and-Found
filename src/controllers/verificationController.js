@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { Claim, Post, User } = require("../models");
 const verificationService = require("../services/verificationService");
+const geminiTrust = require("../services/geminiTrustScore");
 require("dotenv").config(); // ✅ LOAD KEYS
 
 // ✅ CONFIGURE CLOUDINARY (Required for deletion to work)
@@ -78,11 +79,48 @@ exports.createClaim = async (req, res) => {
       }
     }
 
-    // Run the scoring logic NOW
-    const scoringResult = verificationService.calculateTrustScore(
-      { additionalDescription, serialNumber, imageProofUrl },
-      post, // We pass the post object for comparison
-    );
+    // Prepare questionAnswers
+    let questionAnswers = [];
+    try {
+      const rawQA = req.body.questionAnswers;
+      if (Array.isArray(rawQA)) questionAnswers = rawQA;
+      else if (typeof rawQA === "string") questionAnswers = JSON.parse(rawQA);
+      else questionAnswers = [];
+    } catch (qaErr) {
+      console.warn("Failed to parse questionAnswers:", qaErr?.message);
+      questionAnswers = [];
+    }
+
+    // Run dynamic trust scoring via Gemini (fallback to heuristic)
+    let scoringResult = { score: 30 };
+    const expectedQCount = (post.securityQuestions || []).length;
+    const requiredCount = (post.securityQuestions || []).filter(q => q.required).length;
+    console.log(`[TrustScore] Inputs -> expectedQ:${expectedQCount}, required:${requiredCount}, providedAnswers:${questionAnswers.length}`);
+    console.log(`[TrustScore] Snippets -> postDesc:${String(post.description||"").slice(0,120)}... claimDesc:${String(additionalDescription||"").slice(0,120)}...`);
+    try {
+      const ai = await geminiTrust.scoreQAAndDescription({
+        postDesc: post.description,
+        postTitle: post.title,
+        tags: post.tags,
+        claimDesc: additionalDescription,
+        serialNumber,
+        securityQuestions: (post.securityQuestions || []).map((q)=>({ id: q.id, question: q.question, expectedAnswer: q.answer, required: q.required })),
+        claimantAnswers: questionAnswers,
+      });
+      scoringResult = ai;
+      console.log(`[TrustScore] AI result -> score:${ai.score} descScore:${ai.descScore ?? 'n/a'} perQ:${JSON.stringify(ai.perQuestion || []).slice(0,200)} rationale:${String(ai.rationale||'').slice(0,200)}`);
+    } catch (aiErr) {
+      console.warn(`[TrustScore] Gemini error: ${aiErr?.message}. Falling back.`);
+      try {
+        scoringResult = verificationService.calculateTrustScore(
+          { additionalDescription, serialNumber, imageProofUrl },
+          post,
+        );
+        console.log(`[TrustScore] Heuristic fallback -> score:${scoringResult.score}`);
+      } catch (fallbackErr) {
+        console.warn("Fallback heuristic failed:", fallbackErr?.message);
+      }
+    }
 
     // D. Create the Claim Object
     const newClaim = new Claim({
@@ -97,6 +135,8 @@ exports.createClaim = async (req, res) => {
         serialNumber,
         imageProofUrl,
         systemTrustScore: scoringResult.score,
+        systemTrustRationale: scoringResult.rationale || "Heuristic score based on image/serial/keywords",
+        questionAnswers,
       },
 
       // Add History
@@ -110,6 +150,13 @@ exports.createClaim = async (req, res) => {
           action: "EVIDENCE_SUBMITTED",
           performedBy: claimantId,
           details: `Initial Score: ${scoringResult.score}`,
+          timestamp: new Date(),
+        },
+        // Optional explicit score calculation event
+        {
+          action: "SCORE_CALCULATED",
+          performedBy: claimantId,
+          details: `Score ${scoringResult.score}${scoringResult.rationale ? ` | ${String(scoringResult.rationale).slice(0,200)}` : ''}`,
           timestamp: new Date(),
         },
       ],

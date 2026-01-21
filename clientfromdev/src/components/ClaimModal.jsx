@@ -6,7 +6,7 @@ import { X, Upload, CheckCircle, AlertTriangle, HelpCircle } from "lucide-react"
 const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) => {
   // Separate states for Description and Answers
   const [description, setDescription] = useState("");
-  const [answers, setAnswers] = useState("");
+  const [answersMap, setAnswersMap] = useState({}); // { [questionId]: answer }
   const [serialNumber, setSerialNumber] = useState("");
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -31,14 +31,24 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
     
     setStatus("loading");
     setErrorMessage("");
-
-    // Combine Description and Answers for the backend
-    const finalDescription = `User Description: ${description}\n\nSecurity Answers: ${answers}`;
+    // Validate required answers
+    const requiredIds = questions.filter((q) => q.required).map((q) => q.id);
+    const missingRequired = requiredIds.some((qid) => !String(answersMap[qid] || "").trim());
+    if (missingRequired) {
+      setStatus("idle");
+      setErrorMessage("Please answer all required questions.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("evidenceImage", file);
-    formData.append("additionalDescription", finalDescription); // Sending combined text
+    formData.append("additionalDescription", description);
     formData.append("serialNumber", serialNumber);
+    const questionAnswers = (questions || []).map((q) => ({
+      questionId: q.id,
+      answer: String(answersMap[q.id] || "").trim(),
+    }));
+    formData.append("questionAnswers", JSON.stringify(questionAnswers));
 
     try {
       const res = await axios.post(
@@ -143,28 +153,35 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
               />
             </div>
 
-            {/* 3. Security Questions Section (Mock Questions) */}
+            {/* 3. Security Questions Section */}
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
               <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2">
                 <HelpCircle size={16} /> Security Questions
               </h3>
-              
-              <ul className="list-disc list-inside text-xs text-blue-700 mb-3 space-y-1 pl-1">
-                {questions.length > 0 ? questions.map((q, i) => (
-                  <li key={i}>{q}</li>
-                )) : (
-                  <li>No specific questions provided. Please describe the item in detail.</li>
-                )}
-              </ul>
-
-              <textarea 
-                className="w-full border border-blue-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm bg-white"
-                rows="3"
-                placeholder="Answer the questions above here..."
-                value={answers}
-                onChange={(e) => setAnswers(e.target.value)}
-                required
-              />
+              {Array.isArray(questions) && questions.length > 0 ? (
+                <div className="space-y-3">
+                  {questions.map((q) => (
+                    <div key={q.id} className="bg-white rounded-lg border border-blue-200 p-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-blue-800">{q.question}</p>
+                        {q.required && (
+                          <span className="text-xs text-red-600 font-semibold">Required</span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        className="mt-2 w-full border border-blue-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm bg-white"
+                        placeholder="Your answer"
+                        value={answersMap[q.id] || ""}
+                        onChange={(e) => setAnswersMap((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                        required={!!q.required}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-blue-700">No specific questions provided. Please describe the item in detail.</p>
+              )}
             </div>
 
             {/* 4. Serial Number */}

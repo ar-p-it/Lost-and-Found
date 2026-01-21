@@ -22,7 +22,18 @@ const MyPosts = () => {
           params: { authorId: user._id, sort: "-createdAt", limit: 20 },
           withCredentials: true,
         });
-        setPosts(res?.data?.data || []);
+        const raw = res?.data?.data || [];
+        // Deduplicate by title+description (keep the first/newest)
+        const seen = new Set();
+        const unique = [];
+        for (const p of raw) {
+          const key = `${(p.title || "").trim().toLowerCase()}|${(p.description || "").trim().toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(p);
+          }
+        }
+        setPosts(unique);
       } catch (err) {
         console.error(err);
         setError("Could not load your posts.");

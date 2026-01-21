@@ -74,6 +74,19 @@ const postSchema = new mongoose.Schema(
       },
     ],
 
+    // Optional security questions to verify ownership/knowledge
+    securityQuestions: [
+      new mongoose.Schema(
+        {
+          id: { type: String, required: true },
+          question: { type: String, required: true, trim: true, maxlength: 200 },
+          answer: { type: String, trim: true, maxlength: 400 }, // kept private
+          required: { type: Boolean, default: false },
+        },
+        { _id: false },
+      ),
+    ],
+
     // Reference to a counterpart post when matched
     matchedPostId: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
 
@@ -104,6 +117,14 @@ const postSchema = new mongoose.Schema(
       virtuals: true,
       transform: (doc, ret) => {
         delete ret.__v;
+        // Strip answers from securityQuestions for client safety
+        if (Array.isArray(ret.securityQuestions)) {
+          ret.securityQuestions = ret.securityQuestions.map((q) => ({
+            id: q.id,
+            question: q.question,
+            required: !!q.required,
+          }));
+        }
         return ret;
       },
     },

@@ -311,7 +311,7 @@ router.post("/posts", userAuth, async (req, res) => {
     // console.log("CONTENT-TYPE:", req.headers["content-type"]);
     // console.log("RAW BODY:", req.body);
 
-    const { type, title, description, hubId, hubSlug, location, tags, images } =
+    const { type, title, description, hubId, hubSlug, location, tags, images, securityQuestions } =
       req.body;
 
     // Basic validation
@@ -384,6 +384,19 @@ router.post("/posts", userAuth, async (req, res) => {
         .map((img) => ({ url: img.url, caption: img.caption }))
       : [];
 
+    // Normalize securityQuestions (max 3)
+    const normalizedQuestions = Array.isArray(securityQuestions)
+      ? securityQuestions
+        .slice(0, 3)
+        .filter((q) => q && typeof q.question === "string")
+        .map((q) => ({
+          id: typeof q.id === "string" && q.id ? q.id : new mongoose.Types.ObjectId().toString(),
+          question: q.question.trim(),
+          answer: typeof q.answer === "string" ? q.answer.trim() : undefined,
+          required: !!q.required,
+        }))
+      : [];
+
     const post = new Post({
       type,
       title: title.trim(),
@@ -394,6 +407,7 @@ router.post("/posts", userAuth, async (req, res) => {
       location: loc,
       tags: normalizedTags,
       images: normalizedImages,
+      securityQuestions: normalizedQuestions,
     });
 
     const saved = await post.save();
@@ -484,6 +498,7 @@ router.post("/broadcast", userAuth, async (req, res) => {
     start,
     end,
     location,
+    securityQuestions,
   } = req.body;
 
   if (!title || !description) {
@@ -497,14 +512,11 @@ router.post("/broadcast", userAuth, async (req, res) => {
   try {
     let hubs = [];
 
-    /* ---------------- LOST FLOW ---------------- */
+    // LOST: interpolate route and gather unique hubs within ~2km
     if (type === "LOST") {
       if (!start || !end) {
-        return res.status(400).json({
-          error: "start and end are required for LOST items",
-        });
+        return res.status(400).json({ error: "start and end are required for LOST items" });
       }
-
       if (
         typeof start.lat !== "number" ||
         typeof start.lng !== "number" ||
@@ -516,61 +528,52 @@ router.post("/broadcast", userAuth, async (req, res) => {
 
       const points = interpolateRoute(start, end);
       const hubMap = new Map();
-
       for (const p of points) {
         const nearby = await Hub.find({
           isActive: true,
           location: {
             $nearSphere: {
-              $geometry: {
-                type: "Point",
-                coordinates: [p.lng, p.lat],
-              },
+              $geometry: { type: "Point", coordinates: [p.lng, p.lat] },
               $maxDistance: 2000,
             },
           },
         });
-
         nearby.forEach((h) => hubMap.set(h._id.toString(), h));
       }
-
       hubs = [...hubMap.values()];
     }
 
-    /* ---------------- FOUND FLOW ---------------- */
+    // FOUND: hubs near found location within ~2km
     if (type === "FOUND") {
-      if (
-        !location ||
-        typeof location.lat !== "number" ||
-        typeof location.lng !== "number"
-      ) {
-        return res.status(400).json({
-          error: "location (lat,lng) is required for FOUND items",
-        });
+      if (!location || typeof location.lat !== "number" || typeof location.lng !== "number") {
+        return res.status(400).json({ error: "location (lat,lng) is required for FOUND items" });
       }
-
       hubs = await Hub.find({
         isActive: true,
         location: {
           $nearSphere: {
-            $geometry: {
-              type: "Point",
-              coordinates: [location.lng, location.lat],
-            },
+            $geometry: { type: "Point", coordinates: [location.lng, location.lat] },
             $maxDistance: 2000,
           },
         },
       });
     }
 
-    /* ---------------- CREATE POSTS ---------------- */
     if (hubs.length === 0) {
-      return res.json({
-        message: "Broadcast successful",
-        hubsNotified: 0,
-        postsCreated: 0,
-      });
+      return res.json({ message: "Broadcast successful", hubsNotified: 0, postsCreated: 0 });
     }
+
+    const normalizedQuestions = Array.isArray(securityQuestions)
+      ? securityQuestions
+        .slice(0, 3)
+        .filter((q) => q && typeof q.question === "string")
+        .map((q) => ({
+          id: typeof q.id === "string" && q.id ? q.id : new mongoose.Types.ObjectId().toString(),
+          question: q.question.trim(),
+          answer: typeof q.answer === "string" ? q.answer.trim() : undefined,
+          required: !!q.required,
+        }))
+      : [];
 
     const createdPosts = await Promise.all(
       hubs.map((hub) =>
@@ -582,22 +585,16 @@ router.post("/broadcast", userAuth, async (req, res) => {
           hubId: hub._id,
           status: "OPEN",
           tags,
+          securityQuestions: normalizedQuestions,
           location:
             type === "FOUND"
-              ? {
-                type: "Point",
-                coordinates: [location.lng, location.lat],
-              }
+              ? { type: "Point", coordinates: [location.lng, location.lat] }
               : undefined,
         })
       )
     );
 
-    res.json({
-      message: "Broadcast successful",
-      hubsNotified: hubs.length,
-      postsCreated: createdPosts.length,
-    });
+    res.json({ message: "Broadcast successful", hubsNotified: hubs.length, postsCreated: createdPosts.length });
   } catch (err) {
     console.error("Broadcast error:", err);
     res.status(500).json({ error: "Internal server error" });

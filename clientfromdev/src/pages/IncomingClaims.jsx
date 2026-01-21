@@ -63,72 +63,103 @@ const IncomingClaims = () => {
           <p className="text-slate-500 mt-1">You'll see claims for your posts here.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {claims.map((claim) => (
-            <div key={claim._id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-6 items-start md:items-center">
-              {/* Thumb / Initial */}
-              <div className="w-16 h-16 bg-slate-100 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-2xl text-slate-400">
-                {claim.postId?.title?.charAt(0) || "?"}
-              </div>
+            <div key={claim._id} className="bg-white p-7 rounded-2xl shadow-md border border-slate-200 flex flex-col md:flex-row gap-6 items-start md:items-start">
 
               {/* Details */}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-3 mb-1">
-                  <h3 className="text-lg font-bold text-slate-800 truncate">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  {/* Inline Initial next to title */}
+                  <div className="w-10 h-10 bg-slate-100 rounded-lg shrink-0 flex items-center justify-center font-bold text-lg text-slate-500">
+                    {claim.postId?.title?.charAt(0) || "?"}
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 truncate">
                     {claim.postId?.title || "Unknown Item"}
                   </h3>
                   <StatusBadge status={claim.status || "PENDING"} />
                 </div>
-                <p className="text-sm text-slate-500">From: {claim.claimantId?.username || claim.claimantId?.email || "Unknown"}</p>
+                <p className="text-base text-slate-600">From: {claim.claimantId?.username || claim.claimantId?.email || "Unknown"}</p>
 
                 {/* Evidence */}
                 {claim.verification && (
                   <div className="mt-3 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <span className="font-semibold text-slate-700">Serial:</span>
-                      <span>{claim.verification.serialNumber || "—"}</span>
+                    <div className="flex items-center gap-2 text-base text-slate-700">
+                      <span className="font-semibold">Serial:</span>
+                      <span className="text-slate-800">{claim.verification.serialNumber || "—"}</span>
                     </div>
                     {claim.verification.additionalDescription && (
-                      <p className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      <p className="text-base leading-relaxed text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-4">
                         {claim.verification.additionalDescription}
                       </p>
                     )}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                       {claim.verification.imageProofUrl && (
                         <a
                           href={claim.verification.imageProofUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 rounded-lg transition"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 rounded-lg transition"
                         >
                           <ExternalLink size={16} /> View Proof
                         </a>
                       )}
 
-                      {/* Trust score (hardcoded 30 for now) */}
-                      <div className="flex items-center gap-2 ml-1">
-                        <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500" style={{ width: `30%` }}></div>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400">30% Trust</span>
+                      {/* Trust score (dynamic) */}
+                      <div className="flex items-center gap-3 ml-1">
+                        {(() => {
+                          const score = Math.max(0, Math.min(100, Math.round(Number(claim.verification?.systemTrustScore ?? 0))));
+                          const barColor = score > 70 ? "bg-emerald-500" : score > 40 ? "bg-amber-500" : "bg-rose-500";
+                          return (
+                            <>
+                              <div className="h-2 w-32 bg-slate-200 rounded-full overflow-hidden">
+                                <div className={`h-full ${barColor}`} style={{ width: `${score}%` }}></div>
+                              </div>
+                              <span className="text-sm font-semibold text-slate-600">{score}% Trust</span>
+                            </>
+                          );
+                        })()}
                       </div>
+
+                      {/* AI Suggestion moved below Claimant Answers */}
+
+                      {/* Claimed Answers (if any) */}
+                      {Array.isArray(claim.verification.questionAnswers) && claim.verification.questionAnswers.length > 0 && (
+                        <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <h4 className="text-sm font-bold text-slate-800 mb-2">Claimant Answers</h4>
+                          <ul className="text-sm text-slate-700 space-y-1">
+                            {claim.verification.questionAnswers.map((qa, idx) => (
+                              <li key={idx}>
+                                <span className="font-semibold text-slate-800">Q{idx + 1}:</span> {qa.answer || '—'}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {claim.verification?.systemTrustRationale && (
+                        <div className="w-full mt-3 text-sm md:text-base text-slate-700 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                          <span className="font-bold text-indigo-700">AI Suggestion:</span>
+                          <span className="ml-2 italic">“{claim.verification.systemTrustRationale}”</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 self-end md:self-center">
+              <div className="flex items-center gap-3 self-end ml-auto mt-4">
                 <button
                   onClick={() => updateDecision(claim._id, "ACCEPTED")}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
                   disabled={claim.status === "ACCEPTED"}
                 >
                   Accept
                 </button>
                 <button
                   onClick={() => updateDecision(claim._id, "REJECTED")}
-                  className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition disabled:opacity-50"
                   disabled={claim.status === "REJECTED"}
                 >
                   Reject

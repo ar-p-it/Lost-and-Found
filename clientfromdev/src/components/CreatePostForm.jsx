@@ -409,6 +409,7 @@ export default function CreatePostForm() {
         description: '',
         tags: [],
         newTag: '',
+        securityQuestions: [],
     });
 
     // LOST-specific
@@ -442,6 +443,31 @@ export default function CreatePostForm() {
         }));
     };
 
+    // --- Security Questions (max 3) ---
+    const addQuestion = () => {
+        setFormData((prev) => {
+            const count = (prev.securityQuestions?.length || 0);
+            if (count >= 3) return prev;
+            const id = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+            const next = { id, question: '', answer: '', required: false };
+            return { ...prev, securityQuestions: [...(prev.securityQuestions || []), next] };
+        });
+    };
+
+    const updateQuestion = (id, patch) => {
+        setFormData((prev) => ({
+            ...prev,
+            securityQuestions: (prev.securityQuestions || []).map((q) => q.id === id ? { ...q, ...patch } : q)
+        }));
+    };
+
+    const removeQuestion = (id) => {
+        setFormData((prev) => ({
+            ...prev,
+            securityQuestions: (prev.securityQuestions || []).filter((q) => q.id !== id)
+        }));
+    };
+
     // --- Geocoding ---
     const geocodeAndSet = async (input, setter) => {
         if (!input.trim()) return;
@@ -467,6 +493,12 @@ export default function CreatePostForm() {
             title: formData.title,
             description: formData.description,
             tags: formData.tags,
+            securityQuestions: (formData.securityQuestions || []).filter(q => q.question.trim()).map(q => ({
+                id: q.id,
+                question: q.question.trim(),
+                answer: q.answer?.trim() || '',
+                required: !!q.required,
+            })),
         };
 
         if (postType === 'LOST') {
@@ -542,6 +574,50 @@ export default function CreatePostForm() {
 
                 {/* Title */}
                 <div>
+
+                {/* Security Questions (Optional, max 3) */}
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="font-medium">Security Questions (Optional)</label>
+                        <button type="button" onClick={addQuestion} className="px-3 py-1 bg-indigo-600 rounded hover:bg-indigo-700 text-white text-sm disabled:opacity-50"
+                            disabled={(formData.securityQuestions?.length || 0) >= 3}>
+                            Add Question
+                        </button>
+                    </div>
+                    <div className="space-y-3">
+                        {(formData.securityQuestions || []).map((q) => (
+                            <div key={q.id} className="p-3 rounded border border-gray-600 bg-gray-800">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <input
+                                        type="text"
+                                        value={q.question}
+                                        onChange={(e) => updateQuestion(q.id, { question: e.target.value })}
+                                        className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                                        placeholder="Question (e.g., Sticker on laptop lid?)"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={q.answer}
+                                        onChange={(e) => updateQuestion(q.id, { answer: e.target.value })}
+                                        className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                                        placeholder="Answer (kept private)"
+                                    />
+                                </div>
+                                <div className="mt-2 flex items-center justify-between">
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!q.required}
+                                            onChange={(e) => updateQuestion(q.id, { required: e.target.checked })}
+                                        />
+                                        Required to answer
+                                    </label>
+                                    <button type="button" onClick={() => removeQuestion(q.id)} className="text-sm text-red-300 hover:text-red-200">Remove</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
                     <label className="block mb-2 font-medium">Title *</label>
                     <input
                         type="text"
