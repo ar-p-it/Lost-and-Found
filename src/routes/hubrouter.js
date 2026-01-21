@@ -89,6 +89,27 @@ router.get("/hubs", userAuth, async (req, res) => {
 // Create a hub
 // Route: POST /hubs
 // Body: { name, slug, category, location: { type:'Point', coordinates:[lng,lat] }, description?, coverageRadiusMeters?, rules?, makeModerator? }
+router.get("/hubs/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const hub = await Hub.findOne({
+      slug: slug.toLowerCase(),
+      isActive: true,
+    }).select(
+      "name slug category description rules memberCount coverageRadiusMeters location _id"
+    );
+
+    if (!hub) {
+      return res.status(404).json({ message: "Hub not found" });
+    }
+
+    res.status(200).json(hub);
+  } catch (err) {
+    console.error("Get hub by slug error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 router.post("/hubs", userAuth, async (req, res) => {
   try {
     const {

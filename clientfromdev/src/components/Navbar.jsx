@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import { removeUser } from "../utils/userSlice";
 import logo32 from "../Icons/android-chrome-512x512.png";
+import { Sun, Moon } from "lucide-react";
 const RedditNavbar = () => {
   const user = useSelector((store) => store.user);
   // console.log(user);
@@ -19,6 +20,22 @@ const RedditNavbar = () => {
   const [hubsMode, setHubsMode] = useState("joined");
   const [joinedHubIds, setJoinedHubIds] = useState(new Set());
   const isAdmin = user?.roles?.includes("ADMIN");
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "light";
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark" || saved === "light") return saved;
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return prefersDark ? "dark" : "light";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+    try { localStorage.setItem("theme", theme); } catch {}
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const handleLogout = async () => {
     try {
       await axios.post(BASE_URL + "/logout", {}, { withCredentials: true });
@@ -156,6 +173,16 @@ const RedditNavbar = () => {
               Create
             </Link>
 
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle dark mode"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
+              title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
             {isAdmin && (
               <div className="relative dropdown dropdown-end">
                 {/* Soft glow (reduced) */}
@@ -232,7 +259,7 @@ const RedditNavbar = () => {
               </button>
               {hubsOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-[360px] max-h-[60vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl z-50"
+                  className="absolute right-0 mt-2 w-90 max-h-[60vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl z-50"
                   onMouseLeave={() => setHubsOpen(false)}
                 >
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -331,7 +358,7 @@ const RedditNavbar = () => {
                 role="button"
                 className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1.5 shadow-sm hover:bg-white hover:shadow-md transition cursor-pointer"
               >
-                <div className="h-8 w-8 rounded-full overflow-hidden ring-2 ring-indigo-300 flex-shrink-0">
+                <div className="h-8 w-8 rounded-full overflow-hidden ring-2 ring-indigo-300 shrink-0">
                   <img
                     src={
                       user?.photoUrl || user?.photoURL || "/default-avatar.png"
@@ -340,7 +367,7 @@ const RedditNavbar = () => {
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <span className="hidden sm:inline-block text-sm font-bold text-slate-800 max-w-[120px] truncate">
+                <span className="hidden sm:inline-block text-sm font-bold text-slate-800 max-w-30 truncate">
                   {user ? user.username : "Login"}
                 </span>
               </div>

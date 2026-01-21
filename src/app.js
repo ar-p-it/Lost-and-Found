@@ -32,14 +32,16 @@ const authRouter = require("./routes/auth");
 const postRouter = require("./routes/postrouter");
 const hubRouter = require("./routes/hubrouter");
 const chatRouter = require("./routes/chatrouter");
-
+const hubCommunityRouter = require("./routes/hubCommunityRouter");
 const verificationRouter = require("./routes/verification");
 
 app.use("/", authRouter);
 app.use("/", postRouter);
 app.use("/", hubRouter);
 app.use("/", chatRouter);
+app.use("/", hubCommunityRouter);
 app.use("/api/verification", verificationRouter);
+
 
 // connect DB then start server
 connectDB()

@@ -5,6 +5,7 @@ import axios from "axios";
 import { BASE_URL } from "../utils/constants";
 import { addClaim, withdrawByPostId } from "../utils/claimsSlice";
 import ClaimModal from "./ClaimModal";
+import { Link } from "react-router-dom";
 
 const HubPosts = () => {
   const { slug } = useParams();
@@ -19,11 +20,16 @@ const HubPosts = () => {
   const [selectedPost, setSelectedPost] = useState(null);
 
   const loadingRef = useRef(false);
+  const hasMoreRef = useRef(hasMore);
   const abortRef = useRef(null);
+
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
 
   const fetchPosts = useCallback(
     async (pageToLoad = 1, { replace = false } = {}) => {
-      if (!replace && (!hasMore || loadingRef.current)) return;
+      if (!replace && (!hasMoreRef.current || loadingRef.current)) return;
       loadingRef.current = true;
       setLoading(true);
 
@@ -66,12 +72,12 @@ const HubPosts = () => {
         setLoading(false);
       }
     },
-    [hasMore, slug],
+    [slug],
   );
 
   useEffect(() => {
     fetchPosts(1, { replace: true });
-  }, [slug]);
+  }, [slug, fetchPosts]);
 
   const handleClaimSuccess = (post, serverData) => {
     const claimObj = serverData?.claim || serverData?.data?.claim || serverData;
@@ -125,6 +131,28 @@ const HubPosts = () => {
           >
             Refresh
           </button>
+          <div className="flex gap-4 border-b mb-6">
+            <Link
+              to={`/hubs/${slug}`}
+              className={`py-2 px-4 font-medium ${
+                window.location.pathname === `/hubs/${slug}`
+                  ? 'text-slate-900 border-b-2 border-slate-900'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Lost & Found
+            </Link>
+            <Link
+              to={`/hubs/${slug}/community`}
+              className={`py-2 px-4 font-medium ${
+                window.location.pathname === `/hubs/${slug}/community`
+                  ? 'text-slate-900 border-b-2 border-slate-900'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Community
+            </Link>
+          </div>
         </div>
 
         {items.length === 0 && !loading && (

@@ -21,3 +21,70 @@ input,
 textarea {
 	caret-color: #0f172a;
 }
+
+/* Dark mode overrides (applied when html has class 'dark') */
+html.dark body {
+	background-color: #0b1220; /* very dark slate */
+	color: #cbd5e1; /* slate-300 */
+}
+
+/* Common light surfaces to dark surfaces */
+html.dark .bg-white { background-color: #0f172a !important; }
+html.dark .bg-white\/90 { background-color: #0f172a !important; }
+html.dark .bg-white\/95 { background-color: #0f172a !important; }
+html.dark .bg-gray-50 { background-color: #0b1220 !important; }
+html.dark .bg-slate-50 { background-color: #0b1220 !important; }
+
+/* Borders to darker tones */
+html.dark .border-slate-100,
+html.dark .border-gray-100,
+html.dark .border-slate-200,
+html.dark .border-gray-200 { border-color: #1f2937 !important; }
+
+/* Text to light tones */
+html.dark .text-slate-900,
+html.dark .text-gray-900,
+html.dark .text-slate-800,
+html.dark .text-gray-800 { color: #e5e7eb !important; }
+html.dark .text-slate-700,
+html.dark .text-gray-700,
+html.dark .text-slate-600,
+html.dark .text-gray-600 { color: #cbd5e1 !important; }
+html.dark .text-slate-500,
+html.dark .text-gray-500 { color: #94a3b8 !important; }
+html.dark .text-slate-400,
+html.dark .text-gray-400 { color: #94a3b8 !important; }
+
+/* Inputs in dark mode */
+html.dark input,
+html.dark textarea,
+html.dark select {
+	background-color: #0b1220;
+	border-color: #1f2937;
+	color: #e5e7eb;
+	caret-color: #e5e7eb;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: #64748b; }
+/* Ensure inputs inside black/dark containers are readable (light mode too) */
+.bg-black input,
+.bg-black textarea,
+.bg-gray-900 input,
+.bg-gray-900 textarea,
+.bg-slate-900 input,
+.bg-slate-900 textarea {
+	color: #ffffff;
+	caret-color: #ffffff;
+}
+.bg-black input::placeholder,
+.bg-black textarea::placeholder,
+.bg-gray-900 input::placeholder,
+.bg-gray-900 textarea::placeholder,
+.bg-slate-900 input::placeholder,
+.bg-slate-900 textarea::placeholder {
+	color: #cbd5e1; /* slate-300 */
+}
+
+/* Links */
+html.dark a { color: #93c5fd; }
+html.dark a:hover { color: #bfdbfe; }

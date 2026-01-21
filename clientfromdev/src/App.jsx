@@ -23,6 +23,7 @@ import EditProfile from "./components/EditProfile";
 import Profile from "./components/Profile";
 import Hub from "./components/Hub";
 import Hubs from "./pages/Hubs";
+import HubCommunityPage from "./pages/HubCommunityPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/feed" element={<Feed />} />
             <Route path="/hubs/:slug" element={<HubPosts />} />
+            <Route path="/hubs/:slug/community" element={<HubCommunityPage />} />
             <Route path="/create" element={<CreatePostPage />} />
             <Route path="/my-claims" element={<MyClaims />} />
             <Route path="/my-posts" element={<MyPosts />} />
