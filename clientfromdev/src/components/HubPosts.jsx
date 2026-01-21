@@ -233,7 +233,7 @@ const HubPosts = () => {
 
         {!hasMore && items.length > 0 && (
           <p className="text-center text-slate-400">
-            You’ve reached the end 🚀
+            You’ve reached the end of the feed !
           </p>
         )}
 
