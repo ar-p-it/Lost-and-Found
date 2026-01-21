@@ -255,12 +255,23 @@ Create a .env file in the repository root (backend) with:
 - CLOUDINARY_API_KEY
 - CLOUDINARY_API_SECRET
 
-**Note:** MongoDB connection string is currently hard‑coded in src/config/databse.js. Update it with your own URI or move it to an environment variable.
+A MongoDB URI is required; create config/databse.js with the following template and replace the placeholder with your own URI:
+
+```js
+const URI = "<YOUR_MONGODB_URI>";
+const mongoose = require("mongoose");
+
+const connectDB = async () => {
+    await mongoose.connect(URI);
+};
+
+module.exports = connectDB;
+```
 
 ## 🧪 Notes on Implementation
 
 - CORS is configured for http://localhost:5173 with credentials enabled.
-- Uploaded proof images are stored in Cloudinary. Local fallback is supported.
+- Uploaded proof images are stored in Cloudinary.
 - AI trust scoring uses Gemini with a heuristic fallback if the model fails.
 - Geo‑filtering uses MongoDB $nearSphere and 2dsphere indexes.
 
@@ -268,7 +279,6 @@ Create a .env file in the repository root (backend) with:
 
 - src/ → Backend API (Express)
 - clientfromdev/ → Frontend (React + Vite)
-- uploads/ → Local uploads (fallback)
 
 ## 📄 License
 
