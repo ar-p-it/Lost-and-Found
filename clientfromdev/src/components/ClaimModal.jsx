@@ -144,7 +144,7 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
                 Description
               </label>
               <textarea 
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm text-slate-900"
                 rows="2"
                 placeholder="Describe unique features (scratches, stickers)..."
                 value={description}
@@ -170,7 +170,7 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
                       </div>
                       <input
                         type="text"
-                        className="mt-2 w-full border border-blue-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm bg-white"
+                        className="mt-2 w-full border border-blue-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm bg-white text-slate-900"
                         placeholder="Your answer"
                         value={answersMap[q.id] || ""}
                         onChange={(e) => setAnswersMap((prev) => ({ ...prev, [q.id]: e.target.value }))}
@@ -191,7 +191,7 @@ const ClaimModal = ({ postId, postTitle, questions = [], onClose, onSuccess }) =
               </label>
               <input 
                 type="text" 
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-slate-900 bg-white"
                 placeholder="e.g. SN-123456"
                 value={serialNumber}
                 onChange={(e) => setSerialNumber(e.target.value)}
