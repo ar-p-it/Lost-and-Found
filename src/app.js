@@ -58,4 +58,16 @@ connectDB()
     console.error("DB connection failed:", err.message);
   });
 
-// module.exports = app;
+if (process.env.NODE_ENV === "production") {
+  //path to frontend
+  const frontendDistPath = path.join(__dirname, "../../clientfromdev/dist");
+
+  //serve static files
+  app.use(express.static(frontendDistPath));
+
+  // handle routing for any other route 
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(frontendDistPath, "index.html"));
+  });
+}
+module.exports = app;
