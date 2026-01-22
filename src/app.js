@@ -20,9 +20,9 @@ app.use(cors(corsOptions));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // root route
-app.get("/", (req, res) => {
-  res.send("Hello");
-});
+// app.get("/", (req, res) => {
+//   res.send("Hello");
+// });
 
 // Masked env info for debugging (printed once at startup)
 const mask = (k) =>
