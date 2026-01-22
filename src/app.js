@@ -60,7 +60,7 @@ connectDB()
 
 if (process.env.NODE_ENV === "production") {
   //path to frontend
-  const frontendDistPath = path.join(__dirname, "../../clientfromdev/dist");
+  const frontendDistPath = path.join(__dirname, "../clientfromdev/dist");
 
   //serve static files
   app.use(express.static(frontendDistPath));
