@@ -3,31 +3,28 @@ const express = require("express");
 const app = express();
 const connectDB = require("./config/databse");
 const cors = require("cors");
-app.use(express.json());
 const cookieParser = require("cookie-parser");
 const path = require("path");
 
+// Log the environment immediately to debug
+console.log("--------------------------------------");
+console.log("🚀 STARTING SERVER");
+console.log("📂 Current NODE_ENV:", process.env.NODE_ENV);
+console.log("📂 Current Directory:", __dirname);
+console.log("--------------------------------------");
+
+app.use(express.json());
 app.use(cookieParser());
-// app.use(cors());
+
+// Updated CORS to work for both Localhost and Production
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: [
+    "http://localhost:5173", 
+    "https://lost-and-found-ssvd.onrender.com" // Your Render URL
+  ],
   credentials: true,
 };
 app.use(cors(corsOptions));
-// middleware
-
-// This makes http://localhost:7777/uploads/claim-123.jpg accessible
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-// root route
-// app.get("/", (req, res) => {
-//   res.send("Hello");
-// });
-
-// Masked env info for debugging (printed once at startup)
-const mask = (k) =>
-  k ? `${String(k).slice(0, 6)}… (len ${String(k).length})` : "(missing)";
-console.log("[Env] GOOGLE_API_KEY:", mask(process.env.GOOGLE_API_KEY));
 
 const authRouter = require("./routes/auth");
 const postRouter = require("./routes/postrouter");
@@ -43,13 +40,36 @@ app.use("/", chatRouter);
 app.use("/", hubCommunityRouter);
 app.use("/api/verification", verificationRouter);
 
+// serve frontend
+if (process.env.NODE_ENV === "production") {
+  const frontendDistPath = path.join(__dirname, "../clientfromdev/dist");
+  
+  console.log("✅ PRODUCTION MODE: Serving frontend from:", frontendDistPath);
 
-// connect DB then start server
+  // Serve the static files (CSS, JS, Images)
+  app.use(express.static(frontendDistPath));
+
+  // Handle React routing (Return index.html for all other routes)
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(frontendDistPath, "index.html"), (err) => {
+      if (err) {
+        console.error("❌ ERROR sending index.html:", err);
+        res.status(500).send("Error loading frontend.");
+      }
+    });
+  });
+} else {
+  console.log("⚠️ DEV MODE: Not serving frontend static files.");
+  app.get("/", (req, res) => {
+    res.send("API is running in Dev Mode. (Frontend not served)");
+  });
+}
+
+// Connect DB & Start Server
 connectDB()
   .then(() => {
     console.log("DB connection Success");
-
-    const PORT = 7777;
+    const PORT = process.env.PORT || 7777; 
     app.listen(PORT, () => {
       console.log(`Listening on port ${PORT}`);
     });
@@ -58,16 +78,4 @@ connectDB()
     console.error("DB connection failed:", err.message);
   });
 
-if (process.env.NODE_ENV === "production") {
-  //path to frontend
-  const frontendDistPath = path.join(__dirname, "../clientfromdev/dist");
-
-  //serve static files
-  app.use(express.static(frontendDistPath));
-
-  // handle routing for any other route 
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(frontendDistPath, "index.html"));
-  });
-}
 module.exports = app;
