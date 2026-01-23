@@ -120,10 +120,10 @@ const Starter = () => {
           playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-300"
         >
-          <source src="./v1.mp4" type="video/mp4" />
+          <source src="/v1.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.12),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(16,185,129,0.12),transparent_45%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.10),transparent_45%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/80 to-white" />
+        <div className="absolute inset-0 bg-linear-to-b from-white/80 via-white/80 to-white" />
       </div>
 
       <nav className="relative z-30 flex items-center justify-between px-6 sm:px-10 py-5">
