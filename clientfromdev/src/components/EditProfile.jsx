@@ -49,7 +49,7 @@ const EditProfile = () => {
           photoUrl: photoUrl || undefined,
           bio: bio || undefined,
         },
-        { withCredentials: true },
+        { withCredentials: true }
       );
 
       // resilient to backend response shape
@@ -80,77 +80,84 @@ const EditProfile = () => {
     <>
       <div className="min-h-screen flex justify-center items-start mt-10 px-4">
         <div className="w-full max-w-xl">
-          <div className="card bg-base-300 shadow-xl">
+          {/* CHANGED: bg-white, text-black, added border for clean look */}
+          <div className="card bg-white text-slate-900 dark:text-white shadow-xl border border-slate-200">
             <div className="card-body">
-              <h2 className="card-title justify-center mb-4">Edit Profile</h2>
+              <h2 className="card-title justify-center mb-4 text-2xl font-bold text-slate-900">
+                Edit Profile
+              </h2>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {/* Username (readonly) */}
                 <label className="form-control w-full">
-                  <span className="label-text">Username</span>
+                  <span className="label-text text-slate-900 font-medium">Username</span>
                   <input
                     type="text"
                     value={user.username}
                     disabled
-                    className="input input-bordered w-full bg-base-200"
+                    // CHANGED: bg-slate-100 for disabled look
+                    className="input input-bordered w-full bg-slate-100 text-slate-600 border-slate-300"
                   />
                 </label>
 
                 {/* Email (readonly) */}
                 <label className="form-control w-full">
-                  <span className="label-text">Email</span>
+                  <span className="label-text text-slate-900 font-medium">Email</span>
                   <input
                     type="email"
                     value={user.email}
                     disabled
-                    className="input input-bordered w-full bg-base-200"
+                    className="input input-bordered w-full bg-slate-100 text-slate-600 border-slate-300"
                   />
                 </label>
 
                 {/* Display Name */}
                 <label className="form-control w-full">
-                  <span className="label-text">Display Name</span>
+                  <span className="label-text text-slate-900 font-medium">Display Name</span>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="input input-bordered w-full"
+                    // CHANGED: bg-white text-black
+                    className="input input-bordered w-full bg-white text-slate-900 dark:text-white border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 </label>
 
                 {/* Photo URL */}
                 <label className="form-control w-full">
-                  <span className="label-text">Photo URL</span>
+                  <span className="label-text text-slate-900 font-medium">Photo URL</span>
                   <input
                     type="text"
                     value={photoUrl}
                     onChange={(e) => setPhotoUrl(e.target.value)}
-                    className="input input-bordered w-full"
+                    className="input input-bordered w-full bg-white text-slate-900 dark:text-white border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 </label>
 
                 {/* Bio */}
                 <label className="form-control w-full">
-                  <span className="label-text">Bio</span>
+                  <span className="label-text text-slate-900 font-medium">Bio</span>
                   <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="textarea textarea-bordered w-full"
+                    className="textarea textarea-bordered w-full bg-white text-slate-900 dark:text-white border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                     rows={4}
                   />
-                  <span className="text-xs text-slate-400 mt-1">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {bio.length}/280
                   </span>
                 </label>
               </div>
 
               {error && (
-                <p className="text-red-500 text-center mt-3">{error}</p>
+                <p className="text-red-600 dark:text-red-400 text-center mt-3 font-medium">
+                  {error}
+                </p>
               )}
 
-              <div className="card-actions justify-center mt-4">
+              <div className="card-actions justify-center mt-6">
                 <button
-                  className="btn btn-primary w-full"
+                  className="btn btn-primary w-full text-white"
                   disabled={saving}
                   onClick={saveProfile}
                 >
@@ -164,8 +171,8 @@ const EditProfile = () => {
 
       {/* Success Toast */}
       {showToast && !error && (
-        <div className="toast toast-top toast-center">
-          <div className="alert alert-success">
+        <div className="toast toast-top toast-center z-50">
+          <div className="alert alert-success text-white shadow-lg">
             <span>Profile updated successfully</span>
           </div>
         </div>
