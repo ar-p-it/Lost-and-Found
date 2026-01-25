@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { BASE_URL } from "../utils/constants";
 
 // Fix marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -138,7 +139,7 @@ export default function CreatePostForm() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:7777/broadcast", {
+      const response = await fetch(`${BASE_URL}/broadcast`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
