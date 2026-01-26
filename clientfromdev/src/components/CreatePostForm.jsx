@@ -45,9 +45,10 @@ export default function CreatePostForm() {
   });
 
   // Security Questions
-  const [securityQuestions, setSecurityQuestions] = useState([]); // [{ id, question, required }]
+  const [securityQuestions, setSecurityQuestions] = useState([]); // [{ id, question, answer, required }]
   const [newQuestion, setNewQuestion] = useState("");
   const [newQuestionRequired, setNewQuestionRequired] = useState(false);
+  const [newAnswer, setNewAnswer] = useState("");
 
   // LOST-specific
   const [startLocation, setStartLocation] = useState(null);
@@ -109,7 +110,7 @@ export default function CreatePostForm() {
       title: formData.title,
       description: formData.description,
       tags: formData.tags,
-      securityQuestions: securityQuestions.map((q) => ({ id: q.id, question: q.question, required: !!q.required })),
+      securityQuestions: securityQuestions.map((q) => ({ id: q.id, question: q.question, answer: q.answer, required: !!q.required })),
     };
 
     if (postType === "LOST") {
@@ -290,6 +291,13 @@ export default function CreatePostForm() {
                 className="flex-1 p-2 rounded bg-gray-700 border border-gray-600 text-white"
                 placeholder="e.g., What sticker is on the back?"
               />
+              <input
+                type="text"
+                value={newAnswer}
+                onChange={(e) => setNewAnswer(e.target.value)}
+                className="flex-1 p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                placeholder="Expected answer (kept private)"
+              />
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -305,10 +313,11 @@ export default function CreatePostForm() {
                   if (!text) return;
                   setSecurityQuestions((prev) => [
                     ...prev,
-                    { id: `${Date.now()}-${prev.length + 1}` , question: text, required: newQuestionRequired },
+                    { id: `${Date.now()}-${prev.length + 1}` , question: text, answer: newAnswer.trim(), required: newQuestionRequired },
                   ]);
                   setNewQuestion("");
                   setNewQuestionRequired(false);
+                  setNewAnswer("");
                 }}
                 className="px-4 py-2 bg-indigo-600 rounded hover:bg-indigo-700"
               >
@@ -328,6 +337,22 @@ export default function CreatePostForm() {
                         <span className="text-gray-400 mr-2">Q{idx + 1}.</span>
                         {q.question}
                       </p>
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-400 mb-1">Expected answer</label>
+                        <input
+                          type="text"
+                          value={q.answer || ""}
+                          onChange={(e) =>
+                            setSecurityQuestions((prev) =>
+                              prev.map((it) =>
+                                it.id === q.id ? { ...it, answer: e.target.value } : it,
+                              ),
+                            )
+                          }
+                          className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                          placeholder="e.g., Bear sticker"
+                        />
+                      </div>
                       {q.required && (
                         <span className="inline-block mt-1 text-xs text-red-300">Required</span>
                       )}
