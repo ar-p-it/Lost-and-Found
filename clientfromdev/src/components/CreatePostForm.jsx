@@ -44,6 +44,11 @@ export default function CreatePostForm() {
     newTag: "",
   });
 
+  // Security Questions
+  const [securityQuestions, setSecurityQuestions] = useState([]); // [{ id, question, required }]
+  const [newQuestion, setNewQuestion] = useState("");
+  const [newQuestionRequired, setNewQuestionRequired] = useState(false);
+
   // LOST-specific
   const [startLocation, setStartLocation] = useState(null);
   const [endLocation, setEndLocation] = useState(null);
@@ -104,6 +109,7 @@ export default function CreatePostForm() {
       title: formData.title,
       description: formData.description,
       tags: formData.tags,
+      securityQuestions: securityQuestions.map((q) => ({ id: q.id, question: q.question, required: !!q.required })),
     };
 
     if (postType === "LOST") {
@@ -270,6 +276,94 @@ export default function CreatePostForm() {
               </span>
             ))}
           </div>
+        </div>
+
+        {/* Security Questions */}
+        <div>
+          <label className="block mb-2 font-medium">Security Questions</label>
+          <div className="flex flex-col gap-2 bg-gray-700/40 border border-gray-600 rounded p-3">
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <input
+                type="text"
+                value={newQuestion}
+                onChange={(e) => setNewQuestion(e.target.value)}
+                className="flex-1 p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                placeholder="e.g., What sticker is on the back?"
+              />
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={newQuestionRequired}
+                  onChange={(e) => setNewQuestionRequired(e.target.checked)}
+                />
+                Required
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const text = newQuestion.trim();
+                  if (!text) return;
+                  setSecurityQuestions((prev) => [
+                    ...prev,
+                    { id: `${Date.now()}-${prev.length + 1}` , question: text, required: newQuestionRequired },
+                  ]);
+                  setNewQuestion("");
+                  setNewQuestionRequired(false);
+                }}
+                className="px-4 py-2 bg-indigo-600 rounded hover:bg-indigo-700"
+              >
+                Add Question
+              </button>
+            </div>
+
+            {securityQuestions.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {securityQuestions.map((q, idx) => (
+                  <li
+                    key={q.id}
+                    className="flex items-start sm:items-center justify-between gap-3 bg-gray-800 border border-gray-700 rounded p-2"
+                  >
+                    <div className="flex-1">
+                      <p className="text-sm">
+                        <span className="text-gray-400 mr-2">Q{idx + 1}.</span>
+                        {q.question}
+                      </p>
+                      {q.required && (
+                        <span className="inline-block mt-1 text-xs text-red-300">Required</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSecurityQuestions((prev) =>
+                            prev.map((it) =>
+                              it.id === q.id ? { ...it, required: !it.required } : it,
+                            ),
+                          )
+                        }
+                        className="px-3 py-1 text-xs bg-gray-700 rounded hover:bg-gray-600"
+                      >
+                        {q.required ? "Make Optional" : "Make Required"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSecurityQuestions((prev) => prev.filter((it) => it.id !== q.id))
+                        }
+                        className="px-3 py-1 text-xs bg-red-600 rounded hover:bg-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-400">
+            Claimants will need to answer these to verify ownership.
+          </p>
         </div>
 
         {/* LOCATION INPUTS */}
